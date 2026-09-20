@@ -1,0 +1,24 @@
+[20set.2026 12:47:44.048] [main/INFO] [cpw.mods.modlauncher.Launcher/MODLAUNCHER]: ModLauncher running: args [--launchTarget, forgedatadev, --assetIndex, 17, --assetsDir, C:\\Users\\conra\\.gradle\\caches\\neoformruntime\\assets, --gameDir, ., --fml.fmlVersion, 4.0.44, --fml.mcVersion, 1.21.1, --fml.neoForgeVersion, 21.1.250, --fml.neoFormVersion, 20240808.144430, --mod, abysscore, --all, --output, C:\\Users\\conra\\MODS-MC\\REMAKE\\AbyssCore\\src\\generated\\resources, --existing, C:\\Users\\conra\\MODS-MC\\REMAKE\\AbyssCore\\src\\main\\resources]
+[20set.2026 12:47:44.054] [main/INFO] [cpw.mods.modlauncher.Launcher/MODLAUNCHER]: JVM identified as Eclipse Adoptium OpenJDK 64-Bit Server VM 21.0.11+10-LTS
+[20set.2026 12:47:44.059] [main/INFO] [cpw.mods.modlauncher.Launcher/MODLAUNCHER]: ModLauncher 11.0.5+main.901c6ea8 starting: java version 21.0.11 by Eclipse Adoptium; OS Windows 11 arch amd64 version 10.0
+[20set.2026 12:47:44.356] [main/INFO] [net.neoforged.fml.loading.ImmediateWindowHandler/]: ImmediateWindowProvider not loading because launch target is forgedatadev
+[20set.2026 12:47:44.563] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=union:/C:/Users/conra/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.15.2+mixin.0.8.7/2af2f021d8e02a0220dc27a7a72b4666d66d44ca/sponge-mixin-0.15.2+mixin.0.8.7.jar%23138!/ Service=ModLauncher Env=CLIENT
+[20set.2026 12:47:45.652] [main/INFO] [net.neoforged.fml.loading.moddiscovery.locators.JarInJarDependencyLocator/]: Found 2 dependencies adding them to mods collection
+[20set.2026 12:47:45.659] [main/INFO] [net.neoforged.fml.loading.moddiscovery.ModDiscoverer/]: 
+     Mod List:
+		Name Version (Mod Id)
+
+		AbyssCore 0.0.1 (abysscore)
+		GeckoLib 4 4.8.4 (geckolib)
+		Minecraft 1.21.1 (minecraft)
+		NeoForge 21.1.250 (neoforge)
+[20set.2026 12:47:48.656] [main/INFO] [mixin/]: Compatibility level set to JAVA_21
+[20set.2026 12:47:49.061] [main/INFO] [cpw.mods.modlauncher.LaunchServiceHandler/MODLAUNCHER]: Launching target 'forgedatadev' with arguments [--gameDir, ., --assetsDir, C:\Users\conra\.gradle\caches\neoformruntime\assets, --assetIndex, 17, --mod, abysscore, --all, --output, C:\\Users\\conra\\MODS-MC\\REMAKE\\AbyssCore\\src\\generated\\resources, --existing, C:\\Users\\conra\\MODS-MC\\REMAKE\\AbyssCore\\src\\main\\resources]
+[20set.2026 12:47:49.678] [main/WARN] [mixin/]: Reference map 'geckolib.refmap.json' for geckolib.mixins.json could not be read. If this is a development environment you can ignore this message
+[20set.2026 12:47:53.438] [main/INFO] [net.neoforged.neoforge.data.loading.DatagenModLoader/]: Initializing Data Gatherer for mods [abysscore]
+[20set.2026 12:47:53.528] [main/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.3).
+[20set.2026 12:48:12.203] [modloading-worker-0/INFO] [net.neoforged.neoforge.common.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 21.1.250, for MC 1.21.1
+[20set.2026 12:48:13.169] [main/WARN] [net.minecraft.server.packs.VanillaPackResourcesBuilder/]: Assets URL 'union:/C:/Users/conra/MODS-MC/REMAKE/AbyssCore/build/moddev/artifacts/neoforge-21.1.250.jar%23189!/assets/.mcassetsroot' uses unexpected schema
+[20set.2026 12:48:13.171] [main/WARN] [net.minecraft.server.packs.VanillaPackResourcesBuilder/]: Assets URL 'union:/C:/Users/conra/MODS-MC/REMAKE/AbyssCore/build/moddev/artifacts/neoforge-21.1.250.jar%23189!/data/.mcassetsroot' uses unexpected schema
+[20set.2026 12:48:13.655] [main/INFO] [net.minecraft.data.DataGenerator/]: All providers took: 0 ms
+[20set.2026 12:48:13.660] [main/INFO] [net.minecraft.data.HashCache/]: Caching: total files: 0, old count: 0, new count: 1, removed stale: 0, written: 0
