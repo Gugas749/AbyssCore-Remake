@@ -6,7 +6,9 @@ import com.gugas749.abysscore.Abysscore;
 import com.gugas749.abysscore.features.title.ACTitle;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -74,6 +76,30 @@ public class AbyssPermissionHandler {
             GSON.toJson(obj, writer);
         } catch (IOException e) {
             Abysscore.LOGGER.error("[AbyssCore] Failed to save permissions: {}", e.getMessage());
+        }
+    }
+
+    // ── INIT OP PLAYERS ──────────────────────────────────────────────────────
+    @SubscribeEvent
+    public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+
+        UUID uuid = player.getUUID();
+
+        if (player.hasPermissions(2)) {
+            // OP — grant ADMIN if not already in map
+            if (!permissions.containsKey(uuid)) {
+                permissions.put(uuid, AbyssPermissionLevel.ADMIN);
+                save();
+                Abysscore.LOGGER.info("[AbyssCore] Auto-granted ADMIN to OP player {}", player.getName().getString());
+            }
+        } else {
+            // Not OP — if they somehow have ADMIN in the map, strip it down to PLAYER
+            if (permissions.getOrDefault(uuid, AbyssPermissionLevel.PLAYER) == AbyssPermissionLevel.ADMIN) {
+                permissions.put(uuid, AbyssPermissionLevel.PLAYER);
+                save();
+                Abysscore.LOGGER.info("[AbyssCore] Stripped ADMIN from non-OP player {}", player.getName().getString());
+            }
         }
     }
 }

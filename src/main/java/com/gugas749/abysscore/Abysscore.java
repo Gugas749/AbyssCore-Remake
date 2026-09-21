@@ -52,6 +52,7 @@ public class Abysscore {
         NeoForge.EVENT_BUS.register(new AbyssEffectHandler());
         AbyssSyncedAttachment.ATTACHMENT_TYPES.register(modEventBus);
         NeoForge.EVENT_BUS.register(AbyssSyncedAttachment.class);
+        NeoForge.EVENT_BUS.register(AbyssPermissionHandler.class);
 
         // ── Network ──────────────────────────────────────────────────────────
         modEventBus.addListener(PacketHandler::registerPayloads);
