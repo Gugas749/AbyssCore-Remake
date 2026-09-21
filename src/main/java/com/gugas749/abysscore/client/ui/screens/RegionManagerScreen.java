@@ -44,9 +44,21 @@ public class RegionManagerScreen extends Screen {
     private int lx, ly, lw, lh; // list panel
     private int dx, dy, dw, dh; // detail panel
 
-    public RegionManagerScreen(List<OpenRegionScreenPacket.RegionEntry> regions) {
+    private final Screen previousScreen;
+
+    // Set before sending RequestRegionScreenPacket so the S2C response can restore it
+    public static Screen pendingPreviousScreen = null;
+
+    public RegionManagerScreen(List<OpenRegionScreenPacket.RegionEntry> regions,
+            Screen previousScreen) {
         super(Component.translatable("screen.abysscore.region.title"));
         this.regions = new ArrayList<>(regions);
+        this.previousScreen = previousScreen;
+    }
+
+    public RegionManagerScreen(List<OpenRegionScreenPacket.RegionEntry> regions) {
+        this(regions, pendingPreviousScreen);
+        pendingPreviousScreen = null;
     }
 
     @Override
@@ -61,7 +73,7 @@ public class RegionManagerScreen extends Screen {
 
         ALL_TAGS.forEach(tag -> tagState.put(tag, false));
 
-        filterTagBox = new EditBox(font, 0, 0, 100, 14, Component.literal("filter tag"));
+        filterTagBox = new EditBox(font, 0, 0, 100, 16, Component.literal("filter tag"));
         filterTagBox.setMaxLength(64);
         filterTagBox.setHint(Component.literal("Scoreboard tag (empty = block all)"));
         filterTagBox.active = false;
@@ -144,9 +156,11 @@ public class RegionManagerScreen extends Screen {
             // Delete
             if (AbyssUI.isHovered(mx, my, dx + PAD, by, 80, 18)) { onDelete(); return true; }
         }
-        // Close
+        // Close — returns to previous screen (main menu)
         int by = dy + dh - 22;
-        if (AbyssUI.isHovered(mx, my, dx + dw / 2 - 40, by, 80, 18)) { onClose(); return true; }
+        if (AbyssUI.isHovered(mx, my, dx + dw / 2 - 40, by, 80, 18)) {
+            net.minecraft.client.Minecraft.getInstance().setScreen(previousScreen); return true;
+        }
 
         return super.mouseClicked(mx, my, button);
     }

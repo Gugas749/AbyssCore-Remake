@@ -1,6 +1,8 @@
 package com.gugas749.abysscore.commands;
 
 import com.gugas749.abysscore.Abysscore;
+import com.gugas749.abysscore.api.permission.AbyssPermissionHandler;
+import com.gugas749.abysscore.api.permission.AbyssPermissionLevel;
 import com.gugas749.abysscore.commands.subRegisters.*;
 import com.gugas749.abysscore.network.menu.MenuPacketHandlers;
 import com.mojang.brigadier.CommandDispatcher;
@@ -20,12 +22,13 @@ public class ACModCommands {
         register(event.getDispatcher());
 
         ACGodCommands.register(event.getDispatcher());
+        ACPermissionCommands.register(event.getDispatcher());
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("abysscore")
-                        .requires(source -> source.hasPermission(2))
+                        .requires(source -> AbyssPermissionHandler.sourceHas(source, AbyssPermissionLevel.MODERATOR))
                         .executes(ctx -> {
                             if (!(ctx.getSource().getEntity() instanceof ServerPlayer player)) return 0;
                             PacketDistributor.sendToPlayer(player,

@@ -5,6 +5,7 @@ import com.gugas749.abysscore.api.attachment.SyncAttachmentClientHandler;
 import com.gugas749.abysscore.api.attachment.SyncAttachmentPacket;
 import com.gugas749.abysscore.api.effects.AbyssEffectHandler;
 import com.gugas749.abysscore.api.network.AbyssPacketHandler;
+import com.gugas749.abysscore.api.permission.AbyssPermissionHandler;
 import com.gugas749.abysscore.client.ACVanishHudHandler;
 import com.gugas749.abysscore.client.ClientTickHandler;
 import com.gugas749.abysscore.client.KeyBindings;
@@ -103,9 +104,7 @@ public class Abysscore {
         ACDimensionManager.load();   // load registry
         ACDimensionManager.onServerStarted(event.getServer());  // cleanup pending states
         ACTitleManager.load();
-        LOGGER.info("[AbyssCore] Server started, bulk commands loaded.");
-        LOGGER.info("[AbyssCore] Server started, Dimens registry loaded.");
-        LOGGER.info("[AbyssCore] Server started, Titles loaded.");
+        AbyssPermissionHandler.load();
     }
 
     @SubscribeEvent

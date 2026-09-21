@@ -203,5 +203,10 @@
 
   "_comment_death_msg": "--- Death messages ---",
   "death.attack.create.corruption_damage": "%1$s was corrupted to death",
-  "death.attack.create.corruption_damage.player": "%1$s fell victim to %2$s corruption"
+  "death.attack.create.corruption_damage.player": "%1$s fell victim to %2$s corruption",
+
+  "_comment_permission_msg": "--- PERMISSIONS ---",
+  "message.abysscore.permission.grant": "[AbyssCore] Granted §2%s to §2%b",
+  "message.abysscore.permission.revoke": "[AbyssCore] Revoked permissions for §2%s",
+  "message.abysscore.permission.invalidlevel": "[AbyssCore] Invalid level. Use: MODERATOR or PLAYER"
 }

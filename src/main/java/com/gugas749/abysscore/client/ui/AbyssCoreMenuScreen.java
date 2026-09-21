@@ -100,14 +100,8 @@ public class AbyssCoreMenuScreen extends Screen {
         if (selectedCat == 1 && runningTitle != -1) {
             initRunDialog();
         }
-        if (selectedCat == 1 && editingTitle == -1 && runningTitle == -1) {
-            // New title button positioned top-right of panel
-            addAbyssButton(px + pw - PAD - AbyssUI.BTN_W_LG, py + PAD + AbyssUI.HEADER_H + PAD,
-                AbyssUI.BTN_W_LG, AbyssUI.BTN_H, "+ New Title", false, () -> {
-                    editingTitle = -2;
-                    init();
-                });
-        }
+        // New Title button is drawn manually in renderTitles() using AbyssUI.drawButton
+        // and handled in handleTitleClick() — no vanilla widget needed
     }
 
     private void addAbyssButton(int x, int y, int w, int h, String label, boolean danger, Runnable action) {
@@ -118,18 +112,18 @@ public class AbyssCoreMenuScreen extends Screen {
 
     private void initTitleEditor() {
         int x  = px + PAD;
-        int y  = py + AbyssUI.HEADER_H + PAD * 2;
+        int y  = py + AbyssUI.HEADER_H + PAD * 3; // extra top padding
         int fw = pw - PAD * 2;
         int third = (fw - 8) / 3;
 
-        titleNameBox = abyssEditBox(x, y, fw, "Name"); y += 22;
-        titleTextBox = abyssEditBox(x, y, fw, "Title text  (&a green  &c red  &e yellow...)"); y += 22;
-        titleSubBox  = abyssEditBox(x, y, fw, "Subtitle (optional)"); y += 22;
+        titleNameBox = abyssEditBox(x, y, fw, "Name"); y += 30;
+        titleTextBox = abyssEditBox(x, y, fw, "Title text  (&a green  &c red  &e yellow...)"); y += 30;
+        titleSubBox  = abyssEditBox(x, y, fw, "Subtitle (optional)"); y += 30;
 
         titleFadeInBox  = abyssEditBox(x,              y, third, "Fade in (ticks)");
         titleStayBox    = abyssEditBox(x + third + 4,  y, third, "Stay (ticks)");
         titleFadeOutBox = abyssEditBox(x + third*2+8,  y, third, "Fade out (ticks)");
-        y += 22;
+        y += 30;
 
         if (editingTitle >= 0 && editingTitle < titles.size()) {
             var t = titles.get(editingTitle);
@@ -144,10 +138,7 @@ public class AbyssCoreMenuScreen extends Screen {
             titleStayBox.setValue("70");
             titleFadeOutBox.setValue("20");
         }
-
-        final int fy = y + PAD;
-        addAbyssButton(x,          fy, 70, AbyssUI.BTN_H, "Save",   false, this::onSaveTitle);
-        addAbyssButton(x + 74,     fy, 70, AbyssUI.BTN_H, "Cancel", false, () -> { editingTitle = -1; init(); });
+        // Save and Cancel are drawn in renderTitles() and handled in handleTitleClick()
     }
 
     private void initRunDialog() {
@@ -260,10 +251,9 @@ public class AbyssCoreMenuScreen extends Screen {
 
         // Column headers
         g.drawString(font, "\u00a77Name",   x,       y, AbyssUI.TEXT_MUTED, false);
-        g.drawString(font, "\u00a77Staff",  x + 140, y, AbyssUI.TEXT_MUTED, false);
-        g.drawString(font, "\u00a77Vanish", x + 186, y, AbyssUI.TEXT_MUTED, false);
-        g.drawString(font, "\u00a77God",    x + 234, y, AbyssUI.TEXT_MUTED, false);
-        g.drawString(font, "\u00a77Blind",  x + 272, y, AbyssUI.TEXT_MUTED, false);
+        g.drawString(font, "\u00a77Vanish", x + 140, y, AbyssUI.TEXT_MUTED, false);
+        g.drawString(font, "\u00a77God",    x + 182, y, AbyssUI.TEXT_MUTED, false);
+        g.drawString(font, "\u00a77Blind",  x + 220, y, AbyssUI.TEXT_MUTED, false);
         y += 12;
 
         // Divider
@@ -283,9 +273,9 @@ public class AbyssCoreMenuScreen extends Screen {
             boolean hov = AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H);
             AbyssUI.drawRow(g, px + 1, ry, pw - 2, hov, i % 2 == 0);
             g.drawString(font, p.name(), x, ry + 6, AbyssUI.TEXT, false);
-            AbyssUI.drawToggle(g, font, x + 182, ry + 2, 36, 16, p.vanished());
-            AbyssUI.drawToggle(g, font, x + 228, ry + 2, 36, 16, p.godMode());
-            AbyssUI.drawToggle(g, font, x + 266, ry + 2, 36, 16, p.blinded());
+            AbyssUI.drawToggle(g, font, x + 136, ry + 2, 36, 16, p.vanished());
+            AbyssUI.drawToggle(g, font, x + 178, ry + 2, 36, 16, p.godMode());
+            AbyssUI.drawToggle(g, font, x + 216, ry + 2, 36, 16, p.blinded());
         }
         g.disableScissor();
     }
@@ -298,6 +288,26 @@ public class AbyssCoreMenuScreen extends Screen {
         if (editingTitle != -1) {
             String sub = editingTitle == -2 ? "New Title" : "Edit — " + titles.get(editingTitle).name();
             g.drawString(font, "\u00a77" + sub, x, y, AbyssUI.TEXT_MUTED, false);
+
+            // Field backgrounds and labels
+            int fw = pw - PAD * 2;
+            int third = (fw - 8) / 3;
+            int fy = py + AbyssUI.HEADER_H + PAD * 3;
+            drawTitleFieldBg(g, x, fy, fw, "Name"); fy += 30;
+            drawTitleFieldBg(g, x, fy, fw, "Title text"); fy += 30;
+            drawTitleFieldBg(g, x, fy, fw, "Subtitle"); fy += 30;
+            drawTitleFieldBg(g, x,              fy, third, "Fade in"); 
+            drawTitleFieldBg(g, x + third + 4,  fy, third, "Stay");
+            drawTitleFieldBg(g, x + third*2+8,  fy, third, "Fade out");
+            fy += 30;
+
+            // Abyss-style Save / Cancel buttons
+            int saveX = x, cancelX = x + 74;
+            int btnY = fy + PAD;
+            AbyssUI.drawButton(g, font, saveX,   btnY, 70, AbyssUI.BTN_H,
+                "\u00a7bSave",   AbyssUI.isHovered(mx, my, saveX,   btnY, 70, AbyssUI.BTN_H), false);
+            AbyssUI.drawButton(g, font, cancelX, btnY, 70, AbyssUI.BTN_H,
+                "\u00a7cCancel", AbyssUI.isHovered(mx, my, cancelX, btnY, 70, AbyssUI.BTN_H), true);
             return;
         }
         if (runningTitle != -1) {
@@ -305,7 +315,14 @@ public class AbyssCoreMenuScreen extends Screen {
             return;
         }
 
-        y += ROW_H + PAD; // space for "New Title" button
+        // + New Title button — same style as Create Dim, positioned at header level
+        int ntbw = 100, ntbh = AbyssUI.BTN_H;
+        int ntbx = px + pw - PAD - ntbw;
+        int ntby = py + AbyssUI.HEADER_H - ntbh - 2; // 10px above content area
+        AbyssUI.drawButton(g, font, ntbx, ntby, ntbw, ntbh,
+            "\u00a7b+ New Title", AbyssUI.isHovered(mx, my, ntbx, ntby, ntbw, ntbh), false);
+
+        y += ROW_H + PAD; // space below header for list
 
         if (titles.isEmpty()) { drawEmpty(g, "No titles saved. Click + New Title."); return; }
 
@@ -381,10 +398,10 @@ public class AbyssCoreMenuScreen extends Screen {
     private void renderDims(GuiGraphics g, int y, int mx, int my) {
         int x = px + PAD;
 
-        // Create dim button
+        // Create dim button — positioned at header level (10px above content area)
         int cbw = 100, cbh = AbyssUI.BTN_H;
         int cbx = px + pw - PAD - cbw;
-        int cby = py + AbyssUI.HEADER_H + PAD;
+        int cby = py + AbyssUI.HEADER_H - cbh - 2;
         AbyssUI.drawButton(g, font, cbx, cby, cbw, cbh, "\u00a7b+ Create Dim", AbyssUI.isHovered(mx, my, cbx, cby, cbw, cbh), false);
 
         // Column header
@@ -440,6 +457,13 @@ public class AbyssCoreMenuScreen extends Screen {
 
     private void renderBulk(GuiGraphics g, int y, int mx, int my) {
         int x = px + PAD;
+
+        // + Create Bulk button — same style/position as Create Dim
+        int cbbw = 110, cbbh = AbyssUI.BTN_H;
+        int cbbx = px + pw - PAD - cbbw;
+        int cbby = py + AbyssUI.HEADER_H - cbbh - 2;
+        AbyssUI.drawButton(g, font, cbbx, cbby, cbbw, cbbh,
+            "\u00a7b+ Create Bulk", AbyssUI.isHovered(mx, my, cbbx, cbby, cbbw, cbbh), false);
 
         g.drawString(font, "\u00a77Name",        x,       y, AbyssUI.TEXT_MUTED, false);
         g.drawString(font, "\u00a77Bound Slot",  x + 150, y, AbyssUI.TEXT_MUTED, false);
@@ -521,15 +545,32 @@ public class AbyssCoreMenuScreen extends Screen {
         for (int i = playerScroll; i < players.size(); i++) {
             int ry = y + (i - playerScroll) * ROW_H;
             if (!AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H)) continue;
-            var p = players.get(i);
+            // col 0=vanish, 1=god, 2=blind (staff removed)
             if (AbyssUI.isHovered(mx, my, x + 136, ry + 2, 36, 16)) { togglePlayer(i, 0); return; }
-            if (AbyssUI.isHovered(mx, my, x + 182, ry + 2, 36, 16)) { togglePlayer(i, 1); return; }
-            if (AbyssUI.isHovered(mx, my, x + 228, ry + 2, 36, 16)) { togglePlayer(i, 2); return; }
-            if (AbyssUI.isHovered(mx, my, x + 266, ry + 2, 36, 16)) { togglePlayer(i, 3); return; }
+            if (AbyssUI.isHovered(mx, my, x + 178, ry + 2, 36, 16)) { togglePlayer(i, 1); return; }
+            if (AbyssUI.isHovered(mx, my, x + 216, ry + 2, 36, 16)) { togglePlayer(i, 2); return; }
         }
     }
 
     private void handleTitleClick(double mx, double my, int y) {
+        // + New Title button click (list view only)
+        if (editingTitle == -1 && runningTitle == -1) {
+            int ntbw = 100, ntbh = AbyssUI.BTN_H;
+            int ntbx = px + pw - PAD - ntbw;
+            int ntby = py + AbyssUI.HEADER_H - ntbh - 2;
+            if (AbyssUI.isHovered(mx, my, ntbx, ntby, ntbw, ntbh)) {
+                editingTitle = -2; init(); return;
+            }
+        }
+        // Save / Cancel in edit view
+        if (editingTitle != -1 && runningTitle == -1) {
+            int fw = pw - PAD * 2;
+            int third = (fw - 8) / 3;
+            int fy = py + AbyssUI.HEADER_H + PAD * 3 + 30 * 4 + PAD;
+            int x = px + PAD;
+            if (AbyssUI.isHovered(mx, my, x,      fy, 70, AbyssUI.BTN_H)) { onSaveTitle(); return; }
+            if (AbyssUI.isHovered(mx, my, x + 74, fy, 70, AbyssUI.BTN_H)) { editingTitle = -1; init(); return; }
+        }
         if (editingTitle != -1 || runningTitle != -1) return;
         y += ROW_H + AbyssUI.PAD;
         for (int i = titleScroll; i < titles.size(); i++) {
@@ -566,6 +607,7 @@ public class AbyssCoreMenuScreen extends Screen {
         int bx = px + pw / 2 - bw / 2;
         int by = py + ph / 2 - bh / 2;
         if (AbyssUI.isHovered(mx, my, bx, by, bw, bh)) {
+            RegionManagerScreen.pendingPreviousScreen = this;
             PacketDistributor.sendToServer(new RequestRegionScreenPacket());
         }
     }
@@ -573,9 +615,9 @@ public class AbyssCoreMenuScreen extends Screen {
     private void handleDimClick(double mx, double my, int y) {
         int cbw = 100, cbh = AbyssUI.BTN_H;
         int cbx = px + pw - AbyssUI.PAD - cbw;
-        int cby = py + AbyssUI.HEADER_H + AbyssUI.PAD;
+        int cby = py + AbyssUI.HEADER_H - cbh - 2;
         if (AbyssUI.isHovered(mx, my, cbx, cby, cbw, cbh)) {
-            Minecraft.getInstance().setScreen(new DimenCreateScreen());
+            Minecraft.getInstance().setScreen(new DimenCreateScreen(this));
             return;
         }
         y += 16;
@@ -602,6 +644,14 @@ public class AbyssCoreMenuScreen extends Screen {
 
     private void handleBulkClick(double mx, double my, int y) {
         int x = px + AbyssUI.PAD;
+        // + Create Bulk button click
+        int cbbw = 110, cbbh = AbyssUI.BTN_H;
+        int cbbx = px + pw - PAD - cbbw;
+        int cbby = py + AbyssUI.HEADER_H - cbbh - 2;
+        if (AbyssUI.isHovered(mx, my, cbbx, cbby, cbbw, cbbh)) {
+            Minecraft.getInstance().setScreen(new BulkCommandScreen(this));
+            return;
+        }
         y += 16;
         for (int i = bulkScroll; i < bulkCommands.size(); i++) {
             var b = bulkCommands.get(i);
@@ -648,18 +698,18 @@ public class AbyssCoreMenuScreen extends Screen {
 
     private void togglePlayer(int idx, int col) {
         var p = players.get(idx);
+        // col 0=vanish, 1=god, 2=blind
         MenuActionPacket.Action action = switch (col) {
-            case 0 -> MenuActionPacket.Action.TOGGLE_STAFF;
-            case 1 -> MenuActionPacket.Action.TOGGLE_VANISH;
-            case 2 -> MenuActionPacket.Action.TOGGLE_GOD;
+            case 0 -> MenuActionPacket.Action.TOGGLE_VANISH;
+            case 1 -> MenuActionPacket.Action.TOGGLE_GOD;
             default -> MenuActionPacket.Action.TOGGLE_BLIND;
         };
         PacketDistributor.sendToServer(MenuActionPacket.playerAction(action, p.uuid()));
         players.set(idx, new OpenMainMenuPacket.PlayerState(
             p.uuid(), p.name(),
-            col == 1 ? !p.vanished()  : p.vanished(),
-            col == 2 ? !p.godMode()   : p.godMode(),
-            col == 3 ? !p.blinded()   : p.blinded()
+            col == 0 ? !p.vanished() : p.vanished(),
+            col == 1 ? !p.godMode()  : p.godMode(),
+            col == 2 ? !p.blinded()  : p.blinded()
         ));
     }
 
@@ -681,6 +731,12 @@ public class AbyssCoreMenuScreen extends Screen {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private void drawTitleFieldBg(GuiGraphics g, int x, int y, int w, String label) {
+        g.drawString(font, "\u00a77" + label, x, y - 9, AbyssUI.TEXT_MUTED, false);
+        g.fill(x - 2, y - 1, x + w + 2, y + 17, AbyssUI.PANEL_LIGHT);
+        AbyssUI.drawBorder(g, x - 2, y - 1, w + 4, 18, AbyssUI.BORDER);
+    }
 
     private void drawEmpty(GuiGraphics g, String msg) {
         g.drawCenteredString(font, "\u00a77" + msg, px + pw / 2, py + ph / 2, AbyssUI.TEXT_MUTED);

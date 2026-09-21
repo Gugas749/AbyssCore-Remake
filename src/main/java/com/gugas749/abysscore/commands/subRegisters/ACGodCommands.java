@@ -1,6 +1,8 @@
 package com.gugas749.abysscore.commands.subRegisters;
 
 import com.gugas749.abysscore.Abysscore;
+import com.gugas749.abysscore.api.permission.AbyssPermissionHandler;
+import com.gugas749.abysscore.api.permission.AbyssPermissionLevel;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -25,7 +27,7 @@ public class ACGodCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
             Commands.literal("abysscore")
-                .requires(source -> source.hasPermission(2))
+                .requires(source -> AbyssPermissionHandler.sourceHas(source, AbyssPermissionLevel.MODERATOR))
 
                 .then(Commands.literal("god")
 

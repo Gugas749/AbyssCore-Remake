@@ -3,7 +3,6 @@ package com.gugas749.abysscore.client.ui.screens;
 import com.gugas749.abysscore.client.ui.AbyssUI;
 import com.gugas749.abysscore.network.bulk.SubmitBulkCommandPacket;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -17,13 +16,14 @@ import java.util.stream.Collectors;
 public class BulkCommandScreen extends Screen {
 
     private static final int W            = 360;
-    private static final int H            = 280;
+    private static final int H            = 300;  // taller for extra spacing
     private static final int PAD          = AbyssUI.PAD;
     private static final int ROW_H        = 22;
     private static final int MAX_COMMANDS = 10;
     private static final int VISIBLE_ROWS = 6;
 
     private int px, py;
+    private final Screen previousScreen;
 
     private EditBox nameBox;
     private CycleButton<Integer> permButton;
@@ -35,9 +35,12 @@ public class BulkCommandScreen extends Screen {
     private int savedPerm = 0;
     private final List<String> savedCmds = new ArrayList<>();
 
-    public BulkCommandScreen() {
+    public BulkCommandScreen(Screen previousScreen) {
         super(Component.translatable("screen.abysscore.bulk.title"));
+        this.previousScreen = previousScreen;
     }
+
+    public BulkCommandScreen() { this(null); }
 
     @Override
     protected void init() {
@@ -49,10 +52,10 @@ public class BulkCommandScreen extends Screen {
         int y  = py + AbyssUI.HEADER_H + PAD * 2;
 
         // Name field
-        nameBox = abyssField(x, y, fw, "Bulk command name..."); y += 26;
+        nameBox = abyssField(x, y, fw, "Bulk command name..."); y += 34;
         nameBox.setValue(savedName);
 
-        // Permission cycle
+        // Permission cycle — kept as vanilla widget (no good way to draw a cycle without state)
         permButton = CycleButton.<Integer>builder(level ->
             level == 0
                 ? Component.translatable("screen.abysscore.bulk.perm_everyone")
@@ -61,7 +64,7 @@ public class BulkCommandScreen extends Screen {
             .create(x, y, fw, 16,
                 Component.translatable("screen.abysscore.bulk.perm_label"));
         addRenderableWidget(permButton);
-        y += 26;
+        y += 34;
 
         // Commands list
         int listY = y;
@@ -70,24 +73,7 @@ public class BulkCommandScreen extends Screen {
             if (!savedCmds.isEmpty()) commandBoxes.get(0).setValue(savedCmds.get(0));
         }
         rebuildCommandWidgets(x, listY, fw);
-
-        // Bottom buttons
-        int by = py + H - PAD - 18;
-
-        addRenderableWidget(Button.builder(
-            Component.literal("+ Add"),
-            btn -> onAddRow()
-        ).bounds(x, by, 60, 18).build());
-
-        addRenderableWidget(Button.builder(
-            Component.translatable("screen.abysscore.bulk.save"),
-            btn -> onSave()
-        ).bounds(px + W / 2 - 50, by, 100, 18).build());
-
-        addRenderableWidget(Button.builder(
-            Component.literal("Cancel"),
-            btn -> onClose()
-        ).bounds(px + W - PAD - 4 - 80, by, 80, 18).build());
+        // Bottom buttons drawn manually in render()
     }
 
     private void rebuildCommandWidgets(int x, int listY, int fw) {
@@ -99,20 +85,14 @@ public class BulkCommandScreen extends Screen {
             if (idx >= commandBoxes.size()) break;
             EditBox box = commandBoxes.get(idx);
             box.setX(x);
-            box.setY(listY + i * ROW_H + 2);
+            box.setY(listY + i * ROW_H + 3); // +3 centers 16px box in 18px bg row
             box.setWidth(fw - 20);
             addRenderableWidget(box);
-
-            final int ri = idx;
-            addRenderableWidget(Button.builder(
-                Component.literal("\u00d7"),
-                btn -> onRemoveRow(ri)
-            ).bounds(x + fw - 16, listY + i * ROW_H + 2, 16, 16).build());
         }
     }
 
     private EditBox abyssField(int x, int y, int w, String hint) {
-        EditBox box = new EditBox(font, x, y, w, 16, Component.literal(hint));
+        EditBox box = new EditBox(font, x, y + 1, w, 16, Component.literal(hint));
         box.setMaxLength(256);
         box.setHint(Component.literal(hint));
         box.setBordered(false);
@@ -159,7 +139,7 @@ public class BulkCommandScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mx, double my, double sx, double sy) {
-        int listY = py + AbyssUI.HEADER_H + PAD * 2 + 26 + 26;
+        int listY = py + AbyssUI.HEADER_H + PAD * 2 + 34 + 34;
         if (AbyssUI.isHovered(mx, my, px + PAD, listY, W - PAD * 2, VISIBLE_ROWS * ROW_H)) {
             scrollOffset -= (int) Math.signum(sy);
             scrollOffset = Math.max(0, Math.min(scrollOffset, Math.max(0, commandBoxes.size() - VISIBLE_ROWS)));
@@ -179,7 +159,7 @@ public class BulkCommandScreen extends Screen {
         if (cmds.isEmpty()) return;
         PacketDistributor.sendToServer(new SubmitBulkCommandPacket(
             name, permButton != null ? permButton.getValue() : 0, cmds));
-        onClose();
+        net.minecraft.client.Minecraft.getInstance().setScreen(previousScreen);
     }
 
     @Override
@@ -193,9 +173,9 @@ public class BulkCommandScreen extends Screen {
         int y = py + AbyssUI.HEADER_H + PAD * 2;
 
         // Name field bg + label
-        drawFieldLabel(g, x, y, "Name"); drawFieldBg(g, x, y, fw); y += 26;
+        drawFieldLabel(g, x, y, "Name"); drawFieldBg(g, x, y, fw); y += 34;
         // Perm label
-        drawFieldLabel(g, x, y, "Permission"); y += 26;
+        drawFieldLabel(g, x, y, "Permission"); y += 34;
         // Commands label
         drawFieldLabel(g, x, y, "Commands");
 
@@ -222,7 +202,49 @@ public class BulkCommandScreen extends Screen {
                 x - 2 + 2, ry + 4, AbyssUI.TEXT_MUTED, false);
         }
 
+        // Draw × remove buttons for visible rows
+        int listY2 = y + 10;
+        int start2 = Math.min(scrollOffset, Math.max(0, commandBoxes.size() - VISIBLE_ROWS));
+        for (int i = 0; i < VISIBLE_ROWS && (start2 + i) < commandBoxes.size(); i++) {
+            int ry = listY2 + i * ROW_H;
+            boolean xHov = AbyssUI.isHovered(mx, my, x + fw - 16, ry, 16, 16);
+            AbyssUI.drawButton(g, font, x + fw - 16, ry, 16, 16, "\u00d7", xHov, true);
+        }
+
+        // Bottom Abyss-style buttons
+        int by = py + H - PAD - 20;
+        AbyssUI.drawButton(g, font, x,                   by, 60,  18, "\u00a7b+ Add",   AbyssUI.isHovered(mx, my, x,                   by, 60,  18), false);
+        AbyssUI.drawButton(g, font, px + W / 2 - 50,     by, 100, 18, "\u00a7bSave",    AbyssUI.isHovered(mx, my, px + W / 2 - 50,     by, 100, 18), false);
+        AbyssUI.drawButton(g, font, px + W - PAD - 4 - 80, by, 80, 18, "\u00a7cCancel", AbyssUI.isHovered(mx, my, px + W - PAD - 4 - 80, by, 80, 18), true);
+
         super.render(g, mx, my, delta);
+    }
+
+    @Override
+    public boolean mouseClicked(double mx, double my, int button) {
+        int x  = px + PAD + 4;
+        int fw = W - (PAD + 4) * 2;
+        int by = py + H - PAD - 20;
+
+        // Bottom buttons
+        if (AbyssUI.isHovered(mx, my, x,                     by, 60,  18)) { onAddRow(); return true; }
+        if (AbyssUI.isHovered(mx, my, px + W / 2 - 50,       by, 100, 18)) { onSave(); return true; }
+        if (AbyssUI.isHovered(mx, my, px + W - PAD - 4 - 80, by, 80,  18)) {
+            net.minecraft.client.Minecraft.getInstance().setScreen(previousScreen); return true;
+        }
+
+        // × remove buttons for visible rows
+        int listY = py + AbyssUI.HEADER_H + PAD * 2 + 34 + 34 + 10;
+        int start = Math.min(scrollOffset, Math.max(0, commandBoxes.size() - VISIBLE_ROWS));
+        for (int i = 0; i < VISIBLE_ROWS && (start + i) < commandBoxes.size(); i++) {
+            int ry = listY + i * ROW_H;
+            if (AbyssUI.isHovered(mx, my, x + fw - 16, ry, 16, 16)) {
+                final int ri = start + i;
+                onRemoveRow(ri); return true;
+            }
+        }
+
+        return super.mouseClicked(mx, my, button);
     }
 
     private void drawFieldLabel(GuiGraphics g, int x, int y, String label) {

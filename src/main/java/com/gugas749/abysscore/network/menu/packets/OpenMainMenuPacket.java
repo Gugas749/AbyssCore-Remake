@@ -39,7 +39,7 @@ public record OpenMainMenuPacket(
                 buf.writeInt(pkt.players().size());
                 for (var p : pkt.players()) {
                     buf.writeUUID(p.uuid()); buf.writeUtf(p.name());
-                    buf.writeBoolean(p.godMode()); buf.writeBoolean(p.blinded());
+                    buf.writeBoolean(p.vanished()); buf.writeBoolean(p.godMode()); buf.writeBoolean(p.blinded());
                 }
                 // Titles
                 buf.writeInt(pkt.titles().size());
