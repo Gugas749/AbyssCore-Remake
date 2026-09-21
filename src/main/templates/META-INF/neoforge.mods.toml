@@ -1,6 +1,6 @@
 modLoader = "javafml"
 loaderVersion = "${loader_version_range}"
-issueTrackerURL = "https://github.com/Gugas749/AbyssCore/issues"
+issueTrackerURL = "https://github.com/Gugas749/AbyssCore-Remake/issues"
 license = "${mod_license}"
 
 [[mixins]]
