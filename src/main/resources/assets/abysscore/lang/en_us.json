@@ -184,7 +184,7 @@
   "message.abysscore.vanish.hidden_from":        "§1[AbyssCore] §fYou are now hidden from %s.",
   "message.abysscore.vanish.exceptions_cleared": "§1[AbyssCore] §fAll visibility exceptions cleared.",
   "message.abysscore.vanish.no_exceptions":      "§1[AbyssCore] §fNo visibility exceptions set.",
-  "message.abysscore.vanish.hud_warning": "You are currently vanished",
+  "message.abysscore.vanish.hud_warning":        "§4You are currently vanished",
 
   "_comment_god": "--- GOD ---",
   "message.abysscore.god.player_only":      "§1[AbyssCore] §fThis command can only be used by a player.",
@@ -195,18 +195,18 @@
   "message.abysscore.god.disabled_self":    "§1[AbyssCore] §fGod mode enabled.",
 
   "_comment_blind": "--- BLIND ---",
-  "message.abysscore.blind.player_not_found": "[AbyssCore] Player not found.",
-  "message.abysscore.blind.enabled":          "[AbyssCore] %s is now blinded.",
-  "message.abysscore.blind.disabled":         "[AbyssCore] %s is no longer blinded.",
-  "message.abysscore.blind.enabled_self":     "[AbyssCore] You have been blinded.",
-  "message.abysscore.blind.disabled_self":    "[AbyssCore] You are no longer blinded.",
+  "message.abysscore.blind.player_not_found": "§1[AbyssCore] §fPlayer not found.",
+  "message.abysscore.blind.enabled":          "§1[AbyssCore] §2%s §fis now blinded.",
+  "message.abysscore.blind.disabled":         "§1[AbyssCore] §2%s §fis no longer blinded.",
+  "message.abysscore.blind.enabled_self":     "§1[AbyssCore] §fYou have been blinded.",
+  "message.abysscore.blind.disabled_self":    "§1[AbyssCore] §fYou are no longer blinded.",
 
   "_comment_death_msg": "--- Death messages ---",
   "death.attack.create.corruption_damage": "%1$s was corrupted to death",
   "death.attack.create.corruption_damage.player": "%1$s fell victim to %2$s corruption",
 
   "_comment_permission_msg": "--- PERMISSIONS ---",
-  "message.abysscore.permission.grant": "[AbyssCore] Granted §2%s to §2%b",
-  "message.abysscore.permission.revoke": "[AbyssCore] Revoked permissions for §2%s",
-  "message.abysscore.permission.invalidlevel": "[AbyssCore] Invalid level. Use: MODERATOR or PLAYER"
+  "message.abysscore.permission.grant": "§1[AbyssCore] §fGranted §2%s to §2%b",
+  "message.abysscore.permission.revoke": "§1[AbyssCore] §fRevoked permissions for §2%s",
+  "message.abysscore.permission.invalidlevel": "§1[AbyssCore] §fInvalid level. Use: §2MODERATOR §for §2PLAYER"
 }
