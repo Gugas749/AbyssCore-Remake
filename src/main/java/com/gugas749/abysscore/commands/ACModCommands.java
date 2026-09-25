@@ -21,8 +21,16 @@ public class ACModCommands {
 
         register(event.getDispatcher());
 
+        ACBindCommands.register(event.getDispatcher());
+        ACBlindCommands.register(event.getDispatcher());
+        ACBulkCommands.register(event.getDispatcher());
+        ACDimenCommands.register(event.getDispatcher());
+        ACDimenSettingsCommands.register(event.getDispatcher());
         ACGodCommands.register(event.getDispatcher());
+        ACHelpCommands.register(event.getDispatcher());
         ACPermissionCommands.register(event.getDispatcher());
+        ACRegionCommands.register(event.getDispatcher());
+        ACVanishCommands.register(event.getDispatcher());
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {

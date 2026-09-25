@@ -17,7 +17,16 @@ public class ACPermissionCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("abysscore")
-                        .requires(source -> AbyssPermissionHandler.sourceHas(source, AbyssPermissionLevel.ADMIN))
+                        .requires(source -> source.hasPermission(2))
+
+                        .then(Commands.literal("reload")
+                                .executes(ctx -> {
+                                    AbyssPermissionHandler.load();
+                                    ctx.getSource().sendSuccess(
+                                            () -> Component.literal("[AbyssCore] Permissions reloaded."), true);
+                                    return 1;
+                                })
+                        )
 
                         .then(Commands.literal("permission")
                                 .then(Commands.literal("grant")
