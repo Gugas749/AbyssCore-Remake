@@ -21,6 +21,7 @@ import com.gugas749.abysscore.features.regions.ACNoEntryListener;
 import com.gugas749.abysscore.features.title.ACTitleManager;
 import com.gugas749.abysscore.features.vanish.ACVanishExtras;
 import com.gugas749.abysscore.features.vanish.ACVanishStateListener;
+import com.gugas749.abysscore.network.ClientPacketHandler;
 import com.gugas749.abysscore.network.PacketHandler;
 import com.gugas749.abysscore.network.region.NoEntryHandler;
 import com.mojang.logging.LogUtils;
@@ -87,17 +88,6 @@ public class Abysscore {
 
     public static ResourceLocation asResource(String path) {
         return ResourceLocation.fromNamespaceAndPath(MODID, path);
-    }
-
-    @SubscribeEvent
-    public void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar(MODID);
-        AbyssPacketHandler.registerS2C(
-                registrar,
-                SyncAttachmentPacket.TYPE,
-                SyncAttachmentPacket.CODEC,
-                () -> SyncAttachmentClientHandler::handle
-        );
     }
 
     private void onServerStarting(ServerStartingEvent event) {
