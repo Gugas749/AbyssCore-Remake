@@ -22,7 +22,7 @@ public class BulkCommandManager {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path SAVE_PATH =
-        FMLPaths.CONFIGDIR.get().resolve("abysscore_bulk_commands.json");
+        FMLPaths.CONFIGDIR.get().resolve("abysscore/abysscore_bulk_commands.json");
 
     // name → BulkCommandData
     private static final Map<String, BulkCommandData> commands = new LinkedHashMap<>();
@@ -31,6 +31,13 @@ public class BulkCommandManager {
 
     public static void load() {
         commands.clear();
+
+        try {
+            Files.createDirectories(SAVE_PATH.getParent());
+        } catch (IOException e) {
+            Abysscore.LOGGER.error("[AbyssCore] Failed to create config directory: {}", e.getMessage());
+        }
+
         if (!Files.exists(SAVE_PATH)) {
             Abysscore.LOGGER.info("[AbyssCore] No bulk commands file found, starting fresh.");
             return;

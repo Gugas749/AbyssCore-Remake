@@ -91,6 +91,8 @@ public class Abysscore {
     }
 
     private void onServerStarting(ServerStartingEvent event) {
+        AbysscoreServerConfig.load();
+
         BulkCommandManager.load();
         ACDimensionManager.load();   // load registry
         ACDimensionManager.onServerStarted(event.getServer());  // cleanup pending states
