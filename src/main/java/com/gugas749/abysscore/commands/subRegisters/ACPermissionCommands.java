@@ -19,15 +19,6 @@ public class ACPermissionCommands {
                 Commands.literal("abysscore")
                         .requires(source -> source.hasPermission(2))
 
-                        .then(Commands.literal("reload")
-                                .executes(ctx -> {
-                                    AbyssPermissionHandler.load();
-                                    ctx.getSource().sendSuccess(
-                                            () -> Component.literal("[AbyssCore] Permissions reloaded."), true);
-                                    return 1;
-                                })
-                        )
-
                         .then(Commands.literal("permission")
                                 .then(Commands.literal("grant")
                                         .then(Commands.argument("target", EntityArgument.player())

@@ -1,5 +1,6 @@
 package com.gugas749.abysscore.features.chat;
 
+import com.gugas749.abysscore.AbysscoreServerConfig;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -11,13 +12,15 @@ import java.util.Set;
 public class ACChatLockListener {
 
     private static final Set<String> BLOCKED_COMMANDS = Set.of(
-        "say", "tell", "msg", "w", "me", "teammsg", "tm"
+        "say", "me"
     );
 
     @SubscribeEvent(priority = EventPriority.HIGH)
     public void onChat(ServerChatEvent event) {
         if (event.getPlayer() instanceof ServerPlayer player && !player.hasPermissions(2)) {
-            event.setCanceled(true);
+            if (AbysscoreServerConfig.isChatLockEnabled()) {
+                event.setCanceled(true);
+            }
         }
     }
 
@@ -32,7 +35,9 @@ public class ACChatLockListener {
         String commandName = input.split(" ")[0].toLowerCase();
 
         if (BLOCKED_COMMANDS.contains(commandName)) {
-            event.setCanceled(true);
+            if (AbysscoreServerConfig.isChatLockEnabled()) {
+                event.setCanceled(true);
+            }
         }
     }
 }

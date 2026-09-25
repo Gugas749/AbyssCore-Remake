@@ -1,13 +1,17 @@
 package com.gugas749.abysscore.commands;
 
 import com.gugas749.abysscore.Abysscore;
+import com.gugas749.abysscore.AbysscoreServerConfig;
 import com.gugas749.abysscore.api.permission.AbyssPermissionHandler;
 import com.gugas749.abysscore.api.permission.AbyssPermissionLevel;
 import com.gugas749.abysscore.commands.subRegisters.*;
+import com.gugas749.abysscore.features.bulk.BulkCommandManager;
+import com.gugas749.abysscore.features.title.ACTitleManager;
 import com.gugas749.abysscore.network.menu.MenuPacketHandlers;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -43,6 +47,18 @@ public class ACModCommands {
                                     MenuPacketHandlers.buildMenuPacket(player));
                             return 1;
                         })
+
+                        .then(Commands.literal("reload")
+                                .executes(ctx -> {
+                                    AbysscoreServerConfig.load();
+                                    AbyssPermissionHandler.load();
+                                    ACTitleManager.load();
+                                    BulkCommandManager.load();
+                                    ctx.getSource().sendSuccess(
+                                            () -> Component.literal("[AbyssCore] Reloaded."), true);
+                                    return 1;
+                                })
+                        )
         );
 
         Abysscore.LOGGER.info("[AbyssCore] Registered: /abysscore");
