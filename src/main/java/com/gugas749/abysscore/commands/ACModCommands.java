@@ -1,17 +1,21 @@
 package com.gugas749.abysscore.commands;
 
 import com.gugas749.abysscore.Abysscore;
+import com.gugas749.abysscore.AbysscoreServerConfig;
 import com.gugas749.abysscore.api.permission.AbyssPermissionHandler;
 import com.gugas749.abysscore.api.permission.AbyssPermissionLevel;
 import com.gugas749.abysscore.commands.subRegisters.*;
+import com.gugas749.abysscore.features.bulk.BulkCommandManager;
+import com.gugas749.abysscore.features.title.ACTitleManager;
 import com.gugas749.abysscore.network.menu.MenuPacketHandlers;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import com.gugas749.abysscore.network.PacketHandler;
 
 public class ACModCommands {
 
@@ -21,8 +25,16 @@ public class ACModCommands {
 
         register(event.getDispatcher());
 
+        ACBindCommands.register(event.getDispatcher());
+        ACBlindCommands.register(event.getDispatcher());
+        ACBulkCommands.register(event.getDispatcher());
+        ACDimenCommands.register(event.getDispatcher());
+        ACDimenSettingsCommands.register(event.getDispatcher());
         ACGodCommands.register(event.getDispatcher());
+        ACHelpCommands.register(event.getDispatcher());
         ACPermissionCommands.register(event.getDispatcher());
+        ACRegionCommands.register(event.getDispatcher());
+        ACVanishCommands.register(event.getDispatcher());
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -31,10 +43,22 @@ public class ACModCommands {
                         .requires(source -> AbyssPermissionHandler.sourceHas(source, AbyssPermissionLevel.MODERATOR))
                         .executes(ctx -> {
                             if (!(ctx.getSource().getEntity() instanceof ServerPlayer player)) return 0;
-                            PacketDistributor.sendToPlayer(player,
+                            PacketHandler.CHANNEL.sendToPlayer(player,
                                     MenuPacketHandlers.buildMenuPacket(player));
                             return 1;
                         })
+
+                        .then(Commands.literal("reload")
+                                .executes(ctx -> {
+                                    AbysscoreServerConfig.load();
+                                    AbyssPermissionHandler.load();
+                                    ACTitleManager.load();
+                                    BulkCommandManager.load();
+                                    ctx.getSource().sendSuccess(
+                                            () -> Component.literal("[AbyssCore] Reloaded."), true);
+                                    return 1;
+                                })
+                        )
         );
 
         Abysscore.LOGGER.info("[AbyssCore] Registered: /abysscore");

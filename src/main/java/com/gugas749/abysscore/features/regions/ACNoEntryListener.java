@@ -5,10 +5,10 @@ import com.gugas749.abysscore.network.region.ReadyToTeleportPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.TickEvent;
+import com.gugas749.abysscore.network.PacketHandler;
+import com.gugas749.abysscore.api.network.AbyssPacketContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,8 +27,10 @@ public class ACNoEntryListener {
     // ── Server tick — detect entry ────────────────────────────────────────────
 
     @SubscribeEvent
-    public void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+    public void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        // Forge fires START and END each tick; NeoForge's PlayerTickEvent.Post == END
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player)) return;
         if (player.level().isClientSide()) return;
         if (player.hasPermissions(2)) return;
 
@@ -68,7 +70,7 @@ public class ACNoEntryListener {
                 new PendingTeleport(exit[0], exit[1], exit[2], exitYaw, level));
 
             // Send blackscreen packet to client
-            PacketDistributor.sendToPlayer(player,
+            PacketHandler.CHANNEL.sendToPlayer(player,
                 new NoEntryPacket(exit[0], exit[1], exit[2], exitYaw));
 
             ejectCooldowns.put(player.getUUID(), System.currentTimeMillis());
@@ -78,7 +80,7 @@ public class ACNoEntryListener {
 
     // ── C2S: client at peak black — execute teleport now ─────────────────────
 
-    public static void handleReadyToTeleport(ReadyToTeleportPacket packet, IPayloadContext ctx) {
+    public static void handleReadyToTeleport(ReadyToTeleportPacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
 

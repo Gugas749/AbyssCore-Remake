@@ -1,18 +1,10 @@
 package com.gugas749.abysscore.network.dimen;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import com.gugas749.abysscore.api.network.AbyssPacketCodec;
 
-public record OpenDimenCreateScreenPacket() implements CustomPacketPayload {
+/** Server → Client: open the dimension creation screen. No fields. */
+public record OpenDimenCreateScreenPacket() {
 
-    public static final Type<OpenDimenCreateScreenPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath("abysscore", "open_dimen_create"));
-
-    public static final StreamCodec<ByteBuf, OpenDimenCreateScreenPacket> CODEC =
-        StreamCodec.unit(new OpenDimenCreateScreenPacket());
-
-    @Override
-    public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    public static final AbyssPacketCodec<OpenDimenCreateScreenPacket> CODEC =
+        AbyssPacketCodec.unit(new OpenDimenCreateScreenPacket());
 }

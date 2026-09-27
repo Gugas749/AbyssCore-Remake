@@ -2,11 +2,9 @@ package com.gugas749.abysscore.api.effects;
 
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.entity.living.LivingEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.tick.EntityTickEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.*;
 
@@ -41,9 +39,10 @@ public class AbyssEffectHandler {
         }
     }
 
+    // Forge 1.20.1 has no EntityTickEvent — LivingTickEvent fires every tick for every LivingEntity
     @SubscribeEvent
-    public void onEntityTick(EntityTickEvent.Post event) {
-        if (!(event.getEntity() instanceof LivingEntity entity)) return;
+    public void onLivingTick(LivingEvent.LivingTickEvent event) {
+        LivingEntity entity = event.getEntity();
         if (entity.level().isClientSide()) return;
 
         List<MobEffectInstance> effects = continuousEffects.get(entity.getUUID());

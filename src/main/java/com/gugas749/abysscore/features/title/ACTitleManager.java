@@ -10,7 +10,7 @@ import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.fml.loading.FMLPaths;
+import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -23,7 +23,7 @@ public class ACTitleManager {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_FILE =
-        FMLPaths.CONFIGDIR.get().resolve("abysscore_titles.json");
+        FMLPaths.CONFIGDIR.get().resolve("abysscore/abysscore_titles.json");
 
     // id → title
     private static final Map<String, ACTitle> titles = new LinkedHashMap<>();
@@ -32,6 +32,13 @@ public class ACTitleManager {
 
     public static void load() {
         titles.clear();
+
+        try {
+            Files.createDirectories(CONFIG_FILE.getParent());
+        } catch (IOException e) {
+            Abysscore.LOGGER.error("[AbyssCore] Failed to create config directory: {}", e.getMessage());
+        }
+
         if (!Files.exists(CONFIG_FILE)) return;
         try (Reader reader = Files.newBufferedReader(CONFIG_FILE)) {
             JsonArray arr = GSON.fromJson(reader, JsonArray.class);

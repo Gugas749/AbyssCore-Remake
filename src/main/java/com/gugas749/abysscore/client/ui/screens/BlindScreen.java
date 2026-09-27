@@ -3,11 +3,11 @@ package com.gugas749.abysscore.client.ui.screens;
 import com.gugas749.abysscore.network.blind.BlindSyncPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.client.event.RenderGuiEvent;
+import com.gugas749.abysscore.api.network.AbyssPacketContext;
 
 /**
  * Renders a full opaque black overlay when the player is blinded.
@@ -20,7 +20,7 @@ public class BlindScreen {
 
     private static boolean blinded = false;
 
-    public static void handleSync(BlindSyncPacket packet, IPayloadContext ctx) {
+    public static void handleSync(BlindSyncPacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> blinded = packet.blinded());
     }
 

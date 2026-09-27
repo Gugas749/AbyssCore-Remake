@@ -2,7 +2,7 @@ package com.gugas749.abysscore.features.blind;
 
 import com.gugas749.abysscore.network.blind.BlindSyncPacket;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
+import com.gugas749.abysscore.network.PacketHandler;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -15,12 +15,12 @@ public class ACBlindManager {
 
     public static void blind(ServerPlayer player) {
         blindedPlayers.add(player.getUUID());
-        PacketDistributor.sendToPlayer(player, new BlindSyncPacket(true));
+        PacketHandler.CHANNEL.sendToPlayer(player, new BlindSyncPacket(true));
     }
 
     public static void unblind(ServerPlayer player) {
         blindedPlayers.remove(player.getUUID());
-        PacketDistributor.sendToPlayer(player, new BlindSyncPacket(false));
+        PacketHandler.CHANNEL.sendToPlayer(player, new BlindSyncPacket(false));
     }
 
     public static boolean isBlinded(UUID uuid) {
@@ -29,7 +29,7 @@ public class ACBlindManager {
 
     /** Called on player join — re-syncs their blind state. */
     public static void onPlayerJoin(ServerPlayer player) {
-        PacketDistributor.sendToPlayer(player,
+        PacketHandler.CHANNEL.sendToPlayer(player,
             new BlindSyncPacket(blindedPlayers.contains(player.getUUID())));
     }
 

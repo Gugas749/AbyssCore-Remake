@@ -3,12 +3,11 @@ package com.gugas749.abysscore.api.permission;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.gugas749.abysscore.Abysscore;
-import com.gugas749.abysscore.features.title.ACTitle;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -21,7 +20,7 @@ public class AbyssPermissionHandler {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_FILE =
-            FMLPaths.CONFIGDIR.get().resolve("abysscore_permissions.json");
+            FMLPaths.CONFIGDIR.get().resolve("abysscore/abysscore_permissions.json");
 
     private static final Map<UUID, AbyssPermissionLevel> permissions = new HashMap<>();
 
@@ -52,6 +51,13 @@ public class AbyssPermissionHandler {
 
     public static void load() {
         permissions.clear();
+
+        try {
+            Files.createDirectories(CONFIG_FILE.getParent());
+        } catch (IOException e) {
+            Abysscore.LOGGER.error("[AbyssCore] Failed to create config directory: {}", e.getMessage());
+        }
+
         if (!Files.exists(CONFIG_FILE)) return;
         try (Reader reader = Files.newBufferedReader(CONFIG_FILE)) {
             // Use JsonObject not JsonArray — it's a key/value map

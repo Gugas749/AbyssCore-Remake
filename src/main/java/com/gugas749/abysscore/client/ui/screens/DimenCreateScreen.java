@@ -6,7 +6,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
+import com.gugas749.abysscore.network.PacketHandler;
 
 import java.util.Random;
 
@@ -78,7 +78,7 @@ public class DimenCreateScreen extends Screen {
         long seed = 0;
         try { seed = Long.parseLong(seedBox.getValue().trim()); }
         catch (NumberFormatException ignored) {}
-        PacketDistributor.sendToServer(new SubmitDimenCreatePacket(
+        PacketHandler.CHANNEL.sendToServer(new SubmitDimenCreatePacket(
             rawName, displayNameBox.getValue().trim(), currentStyle, seed));
         net.minecraft.client.Minecraft.getInstance().setScreen(previousScreen);
     }
@@ -166,5 +166,4 @@ public class DimenCreateScreen extends Screen {
     }
 
     @Override public boolean isPauseScreen() { return false; }
-    @Override public void renderBackground(GuiGraphics g, int mx, int my, float delta) {}
 }

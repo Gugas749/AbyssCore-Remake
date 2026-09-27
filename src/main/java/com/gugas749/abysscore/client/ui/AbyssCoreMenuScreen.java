@@ -10,7 +10,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
+import com.gugas749.abysscore.network.PacketHandler;
 
 import java.util.*;
 
@@ -585,7 +585,7 @@ public class AbyssCoreMenuScreen extends Screen {
     private void handleVanishClick(double mx, double my, int y) {
         // Team visibility toggle
         if (AbyssUI.isHovered(mx, my, px + pw - AbyssUI.PAD - 50, y + 2, 50, 16)) {
-            PacketDistributor.sendToServer(MenuActionPacket.of(MenuActionPacket.Action.TOGGLE_TEAM_VISIBILITY));
+            PacketHandler.CHANNEL.sendToServer(MenuActionPacket.of(MenuActionPacket.Action.TOGGLE_TEAM_VISIBILITY));
             teamVisibility = !teamVisibility;
             return;
         }
@@ -596,9 +596,9 @@ public class AbyssCoreMenuScreen extends Screen {
             if (!AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H)) continue;
             var p = vanished.get(i);
             int bx = px + pw - AbyssUI.PAD - 46 * 3 - 8;
-            if (AbyssUI.isHovered(mx, my, bx,    ry+2, 44, 16)) { PacketDistributor.sendToServer(new MenuActionPacket(MenuActionPacket.Action.VANISH_SHOW_TO,   p.uuid(), p.uuid().toString(), "", 0)); return; }
-            if (AbyssUI.isHovered(mx, my, bx+48, ry+2, 44, 16)) { PacketDistributor.sendToServer(new MenuActionPacket(MenuActionPacket.Action.VANISH_HIDE_FROM, p.uuid(), p.uuid().toString(), "", 0)); return; }
-            if (AbyssUI.isHovered(mx, my, bx+96, ry+2, 44, 16)) { PacketDistributor.sendToServer(new MenuActionPacket(MenuActionPacket.Action.VANISH_CLEAR,     null,     p.uuid().toString(), "", 0)); return; }
+            if (AbyssUI.isHovered(mx, my, bx,    ry+2, 44, 16)) { PacketHandler.CHANNEL.sendToServer(new MenuActionPacket(MenuActionPacket.Action.VANISH_SHOW_TO,   p.uuid(), p.uuid().toString(), "", 0)); return; }
+            if (AbyssUI.isHovered(mx, my, bx+48, ry+2, 44, 16)) { PacketHandler.CHANNEL.sendToServer(new MenuActionPacket(MenuActionPacket.Action.VANISH_HIDE_FROM, p.uuid(), p.uuid().toString(), "", 0)); return; }
+            if (AbyssUI.isHovered(mx, my, bx+96, ry+2, 44, 16)) { PacketHandler.CHANNEL.sendToServer(new MenuActionPacket(MenuActionPacket.Action.VANISH_CLEAR,     null,     p.uuid().toString(), "", 0)); return; }
         }
     }
 
@@ -608,7 +608,7 @@ public class AbyssCoreMenuScreen extends Screen {
         int by = py + ph / 2 - bh / 2;
         if (AbyssUI.isHovered(mx, my, bx, by, bw, bh)) {
             RegionManagerScreen.pendingPreviousScreen = this;
-            PacketDistributor.sendToServer(new RequestRegionScreenPacket());
+            PacketHandler.CHANNEL.sendToServer(new RequestRegionScreenPacket());
         }
     }
 
@@ -625,7 +625,7 @@ public class AbyssCoreMenuScreen extends Screen {
             int ry = y + (i - dimScroll) * ROW_H;
             if (!AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H)) continue;
             if (AbyssUI.isHovered(mx, my, px + pw - AbyssUI.PAD - BTN_SM, ry+2, BTN_SM, 16)) {
-                PacketDistributor.sendToServer(MenuActionPacket.stringAction(MenuActionPacket.Action.DIMEN_TP, dims.get(i).name(), ""));
+                PacketHandler.CHANNEL.sendToServer(MenuActionPacket.stringAction(MenuActionPacket.Action.DIMEN_TP, dims.get(i).name(), ""));
             }
         }
     }
@@ -635,7 +635,7 @@ public class AbyssCoreMenuScreen extends Screen {
             int ry = y + (i - helpScroll) * ROW_H;
             if (!AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H)) continue;
             if (AbyssUI.isHovered(mx, my, px + pw - AbyssUI.PAD - BTN_SM, ry+2, BTN_SM, 16)) {
-                PacketDistributor.sendToServer(MenuActionPacket.playerAction(MenuActionPacket.Action.HELP_ACCEPT, helpRequests.get(i).playerUUID()));
+                PacketHandler.CHANNEL.sendToServer(MenuActionPacket.playerAction(MenuActionPacket.Action.HELP_ACCEPT, helpRequests.get(i).playerUUID()));
                 helpRequests.remove(i);
                 return;
             }
@@ -663,10 +663,10 @@ public class AbyssCoreMenuScreen extends Screen {
                 if (AbyssUI.isHovered(mx, my, slotX, ry + 2, 12, 16)) {
                     boolean isBound = b.name().equals(bindSlots.get(slot));
                     if (isBound) {
-                        PacketDistributor.sendToServer(MenuActionPacket.intAction(MenuActionPacket.Action.BULK_UNBIND, "", slot));
+                        PacketHandler.CHANNEL.sendToServer(MenuActionPacket.intAction(MenuActionPacket.Action.BULK_UNBIND, "", slot));
                         bindSlots.remove(slot);
                     } else {
-                        PacketDistributor.sendToServer(MenuActionPacket.intAction(MenuActionPacket.Action.BULK_BIND, b.name(), slot));
+                        PacketHandler.CHANNEL.sendToServer(MenuActionPacket.intAction(MenuActionPacket.Action.BULK_BIND, b.name(), slot));
                         bindSlots.put(slot, b.name());
                     }
                     return;
@@ -675,14 +675,14 @@ public class AbyssCoreMenuScreen extends Screen {
             }
             // Run
             if (AbyssUI.isHovered(mx, my, slotX + 4, ry + 2, BTN_SM, 16)) {
-                PacketDistributor.sendToServer(MenuActionPacket.stringAction(MenuActionPacket.Action.BULK_RUN, b.name(), ""));
+                PacketHandler.CHANNEL.sendToServer(MenuActionPacket.stringAction(MenuActionPacket.Action.BULK_RUN, b.name(), ""));
                 return;
             }
         }
     }
 
     @Override
-    public boolean mouseScrolled(double mx, double my, double dx, double dy) {
+    public boolean mouseScrolled(double mx, double my, double dy) {
         int d = -(int) dy;
         switch (selectedCat) {
             case 0 -> playerScroll = clamp(playerScroll + d, players.size());
@@ -704,7 +704,7 @@ public class AbyssCoreMenuScreen extends Screen {
             case 1 -> MenuActionPacket.Action.TOGGLE_GOD;
             default -> MenuActionPacket.Action.TOGGLE_BLIND;
         };
-        PacketDistributor.sendToServer(MenuActionPacket.playerAction(action, p.uuid()));
+        PacketHandler.CHANNEL.sendToServer(MenuActionPacket.playerAction(action, p.uuid()));
         players.set(idx, new OpenMainMenuPacket.PlayerState(
             p.uuid(), p.name(),
             col == 0 ? !p.vanished() : p.vanished(),
@@ -719,7 +719,7 @@ public class AbyssCoreMenuScreen extends Screen {
         String text = titleTextBox.getValue().trim();
         if (name.isEmpty() || text.isEmpty()) return;
         String id = (editingTitle >= 0 && editingTitle < titles.size()) ? titles.get(editingTitle).id() : "";
-        PacketDistributor.sendToServer(new SaveTitlePacket(id, name, text,
+        PacketHandler.CHANNEL.sendToServer(new SaveTitlePacket(id, name, text,
             titleSubBox != null ? titleSubBox.getValue().trim() : "",
             parseInt(titleFadeInBox, 10), parseInt(titleStayBox, 70), parseInt(titleFadeOutBox, 20)));
         editingTitle = -1;
@@ -727,7 +727,7 @@ public class AbyssCoreMenuScreen extends Screen {
     }
 
     private void sendTitle(MenuActionPacket.Action action, String id, String arg) {
-        PacketDistributor.sendToServer(MenuActionPacket.stringAction(action, id, arg));
+        PacketHandler.CHANNEL.sendToServer(MenuActionPacket.stringAction(action, id, arg));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -756,5 +756,4 @@ public class AbyssCoreMenuScreen extends Screen {
     }
 
     @Override public boolean isPauseScreen() { return false; }
-    @Override public void renderBackground(GuiGraphics g, int mx, int my, float delta) {}
 }

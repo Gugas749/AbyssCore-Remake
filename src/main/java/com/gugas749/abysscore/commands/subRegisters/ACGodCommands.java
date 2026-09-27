@@ -10,9 +10,9 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
+import net.minecraftforge.event.TickEvent;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -93,8 +93,10 @@ public class ACGodCommands {
 
     // ── Damage cancel ─────────────────────────────────────────────────────────
 
+    // Forge 1.20.1 has no LivingIncomingDamageEvent. LivingAttackEvent fires at the start of
+    // LivingEntity#hurt and is cancelable, which blocks the damage (and the hurt animation/knockback).
     @SubscribeEvent
-    public void onIncomingDamage(LivingIncomingDamageEvent event) {
+    public void onIncomingDamage(LivingAttackEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (godModePlayers.contains(player.getUUID())) {
             event.setCanceled(true);
@@ -102,8 +104,10 @@ public class ACGodCommands {
     }
 
     @SubscribeEvent
-    public void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+    public void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        // Forge fires START and END each tick; NeoForge's PlayerTickEvent.Post == END
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player)) return;
         if (!godModePlayers.contains(player.getUUID())) return;
         if (player.tickCount % 20 != 0) return; // once per second
 

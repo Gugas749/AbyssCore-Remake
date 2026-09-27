@@ -1,15 +1,10 @@
 package com.gugas749.abysscore.network.menu.packets;
 
-import com.gugas749.abysscore.Abysscore;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import com.gugas749.abysscore.api.network.AbyssPacketCodec;
 
-public record RequestRegionScreenPacket() implements CustomPacketPayload {
-    public static final Type<RequestRegionScreenPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(Abysscore.MODID, "request_region_screen"));
-    public static final StreamCodec<ByteBuf, RequestRegionScreenPacket> CODEC =
-            StreamCodec.unit(new RequestRegionScreenPacket());
-    @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+/** Client → Server: asks the server to send the region manager screen. No fields. */
+public record RequestRegionScreenPacket() {
+
+    public static final AbyssPacketCodec<RequestRegionScreenPacket> CODEC =
+            AbyssPacketCodec.unit(new RequestRegionScreenPacket());
 }

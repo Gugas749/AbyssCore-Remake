@@ -12,7 +12,7 @@ public class ACWorldEditSelection {
 
     public static Optional<Selection> getSelection(ServerPlayer player) throws SelectionUnavailableException {
         try {
-            Class<?> adapterClass = Class.forName("com.sk89q.worldedit.neoforge.NeoForgeAdapter");
+            Class<?> adapterClass = Class.forName("com.sk89q.worldedit.forge.ForgeAdapter");
             Class<?> worldEditClass = Class.forName("com.sk89q.worldedit.WorldEdit");
             Class<?> sessionOwnerClass = Class.forName("com.sk89q.worldedit.session.SessionOwner");
             Class<?> worldClass = Class.forName("com.sk89q.worldedit.world.World");

@@ -1,16 +1,12 @@
 package com.gugas749.abysscore.network.region;
 
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
-
+import com.gugas749.abysscore.api.network.AbyssPacketCodec;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public record OpenRegionScreenPacket(List<RegionEntry> regions) implements CustomPacketPayload {
+public record OpenRegionScreenPacket(List<RegionEntry> regions) {
 
     public record RegionEntry(
         String name,
@@ -21,10 +17,7 @@ public record OpenRegionScreenPacket(List<RegionEntry> regions) implements Custo
         String entryFilterTag   // empty = no filter (nobody enters)
     ) {}
 
-    public static final Type<OpenRegionScreenPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath("abysscore", "open_region_screen"));
-
-    public static final StreamCodec<FriendlyByteBuf, OpenRegionScreenPacket> CODEC = StreamCodec.of(
+    public static final AbyssPacketCodec<OpenRegionScreenPacket> CODEC = AbyssPacketCodec.of(
         (buf, pkt) -> {
             buf.writeInt(pkt.regions().size());
             for (RegionEntry r : pkt.regions()) {
@@ -54,6 +47,4 @@ public record OpenRegionScreenPacket(List<RegionEntry> regions) implements Custo
         }
     );
 
-    @Override
-    public Type<? extends CustomPacketPayload> type() { return TYPE; }
 }

@@ -2,13 +2,16 @@ package com.gugas749.abysscore.client;
 
 import com.gugas749.abysscore.network.binds.KeyPressPacket;
 import net.minecraft.client.Minecraft;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.TickEvent;
+import com.gugas749.abysscore.network.PacketHandler;
 
 public class ClientTickHandler {
     @SubscribeEvent
-    public void onClientTick(ClientTickEvent.Post event) {
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        // Forge fires this twice per tick (START and END) — NeoForge's .Post == END
+        if (event.phase != TickEvent.Phase.END) return;
+
         Minecraft mc = Minecraft.getInstance();
         // Don't fire if not in-game
         if (mc.player == null || mc.level == null) return;
@@ -18,7 +21,7 @@ public class ClientTickHandler {
         for (int i = 0; i < KeyBindings.SLOT_COUNT; i++) {
             // consumeClick returns true once per physical key press
             if (KeyBindings.SLOTS[i].consumeClick()) {
-                PacketDistributor.sendToServer(new KeyPressPacket(i + 1)); // slots are 1-indexed
+                PacketHandler.CHANNEL.sendToServer(new KeyPressPacket(i + 1)); // slots are 1-indexed
             }
         }
     }

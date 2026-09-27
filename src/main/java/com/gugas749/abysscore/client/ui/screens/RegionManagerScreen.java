@@ -8,7 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
+import com.gugas749.abysscore.network.PacketHandler;
 
 import java.util.*;
 
@@ -106,7 +106,7 @@ public class RegionManagerScreen extends Screen {
         Set<String> active = new LinkedHashSet<>();
         ALL_TAGS.forEach(tag -> { if (tagState.getOrDefault(tag, false)) active.add(tag); });
         String filter = filterTagBox != null ? filterTagBox.getValue().trim() : "";
-        PacketDistributor.sendToServer(new SubmitRegionUpdatePacket(name, false, active, filter));
+        PacketHandler.CHANNEL.sendToServer(new SubmitRegionUpdatePacket(name, false, active, filter));
         var old = regions.get(selectedIndex);
         regions.set(selectedIndex, new OpenRegionScreenPacket.RegionEntry(
             old.name(), old.dimension(),
@@ -118,7 +118,7 @@ public class RegionManagerScreen extends Screen {
 
     private void onDelete() {
         if (selectedIndex < 0 || selectedIndex >= regions.size()) return;
-        PacketDistributor.sendToServer(new SubmitRegionUpdatePacket(
+        PacketHandler.CHANNEL.sendToServer(new SubmitRegionUpdatePacket(
             regions.get(selectedIndex).name(), true, Set.of(), ""));
         regions.remove(selectedIndex);
         selectRegion(-1);
@@ -166,13 +166,13 @@ public class RegionManagerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mx, double my, double dx2, double dy2) {
+    public boolean mouseScrolled(double mx, double my, double dy2) {
         if (AbyssUI.isHovered(mx, my, lx, ly, lw, lh)) {
             int maxScroll = Math.max(0, regions.size() - (lh - AbyssUI.HEADER_H) / ROW_H);
             listScroll = Math.max(0, Math.min(listScroll - (int) dy2, maxScroll));
             return true;
         }
-        return super.mouseScrolled(mx, my, dx2, dy2);
+        return super.mouseScrolled(mx, my, dy2);
     }
 
     // ── Render ────────────────────────────────────────────────────────────────
@@ -328,5 +328,4 @@ public class RegionManagerScreen extends Screen {
     }
 
     @Override public boolean isPauseScreen() { return false; }
-    @Override public void renderBackground(GuiGraphics g, int mx, int my, float delta) {}
 }

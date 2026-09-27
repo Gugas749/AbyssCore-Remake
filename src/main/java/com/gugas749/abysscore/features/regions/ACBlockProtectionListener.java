@@ -8,14 +8,14 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.bus.api.EventPriority;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
-import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
-import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.entity.EntityTeleportEvent;
+import net.minecraftforge.event.entity.living.MobSpawnEvent;
+import net.minecraftforge.event.entity.player.AttackEntityEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.level.BlockEvent;
+import net.minecraftforge.event.TickEvent;
 
 public class ACBlockProtectionListener {
 
@@ -110,8 +110,10 @@ public class ACBlockProtectionListener {
     // ── no_fly + no_hunger — checked every server tick ────────────────────────
 
     @SubscribeEvent
-    public void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+    public void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        // Forge fires START and END each tick; NeoForge's PlayerTickEvent.Post == END
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player)) return;
         if (player.level().isClientSide()) return;
         if (isExempt(player)) return;
 
@@ -231,7 +233,7 @@ public class ACBlockProtectionListener {
     // ── no_mobspawning_hostile ────────────────────────────────────────────────
 
     @SubscribeEvent(priority = EventPriority.HIGH)
-    public void onMobSpawn(FinalizeSpawnEvent event) {
+    public void onMobSpawn(MobSpawnEvent.FinalizeSpawn event) {  // Forge 1.20.1 name
         if (!(event.getLevel() instanceof ServerLevel level)) return;
 
         BlockPos pos = event.getEntity().blockPosition();

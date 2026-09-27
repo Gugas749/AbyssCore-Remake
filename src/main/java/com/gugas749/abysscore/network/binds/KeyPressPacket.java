@@ -1,25 +1,15 @@
 package com.gugas749.abysscore.network.binds;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import com.gugas749.abysscore.api.network.AbyssPacketCodec;
 
 /**
  * Client → Server: a keybind slot was pressed.
  * slot: 1-9
  */
-public record KeyPressPacket(int slot) implements CustomPacketPayload {
+public record KeyPressPacket(int slot) {
 
-    public static final Type<KeyPressPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("abysscore", "key_press"));
-
-    public static final StreamCodec<ByteBuf, KeyPressPacket> CODEC =
-            ByteBufCodecs.INT.map(KeyPressPacket::new, KeyPressPacket::slot);
-
-    @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
+    public static final AbyssPacketCodec<KeyPressPacket> CODEC = AbyssPacketCodec.of(
+            (buf, pkt) -> buf.writeInt(pkt.slot()),
+            buf -> new KeyPressPacket(buf.readInt())
+    );
 }

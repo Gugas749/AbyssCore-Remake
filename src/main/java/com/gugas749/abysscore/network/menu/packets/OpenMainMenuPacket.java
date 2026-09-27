@@ -1,11 +1,6 @@
 package com.gugas749.abysscore.network.menu.packets;
 
-import com.gugas749.abysscore.Abysscore;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
-
+import com.gugas749.abysscore.api.network.AbyssPacketCodec;
 import java.util.*;
 
 public record OpenMainMenuPacket(
@@ -16,7 +11,7 @@ public record OpenMainMenuPacket(
         List<BulkEntry>     bulkCommands,
         Map<Integer, String> bindSlots,    // slot (1-9) → bulk command name
         boolean             teamVisibility // vanish team visibility state
-) implements CustomPacketPayload {
+) {
 
     public record PlayerState(UUID uuid, String name,
                               boolean vanished, boolean godMode, boolean blinded) {}
@@ -30,10 +25,7 @@ public record OpenMainMenuPacket(
 
     public record BulkEntry(String name) {}
 
-    public static final Type<OpenMainMenuPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(Abysscore.MODID, "open_main_menu"));
-
-    public static final StreamCodec<RegistryFriendlyByteBuf, OpenMainMenuPacket> CODEC = StreamCodec.of(
+    public static final AbyssPacketCodec<OpenMainMenuPacket> CODEC = AbyssPacketCodec.of(
             (buf, pkt) -> {
                 // Players
                 buf.writeInt(pkt.players().size());
@@ -103,6 +95,4 @@ public record OpenMainMenuPacket(
             }
     );
 
-    @Override
-    public Type<? extends CustomPacketPayload> type() { return TYPE; }
 }

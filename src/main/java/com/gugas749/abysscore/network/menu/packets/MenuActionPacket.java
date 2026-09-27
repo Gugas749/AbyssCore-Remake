@@ -1,11 +1,6 @@
 package com.gugas749.abysscore.network.menu.packets;
 
-import com.gugas749.abysscore.Abysscore;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
-
+import com.gugas749.abysscore.api.network.AbyssPacketCodec;
 import java.util.UUID;
 
 public record MenuActionPacket(
@@ -14,7 +9,7 @@ public record MenuActionPacket(
         String stringArg1,
         String stringArg2,
         int    intArg
-) implements CustomPacketPayload {
+) {
 
     public enum Action {
         // Player actions
@@ -50,10 +45,7 @@ public record MenuActionPacket(
         return new MenuActionPacket(action, null, a1, "", intArg);
     }
 
-    public static final Type<MenuActionPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(Abysscore.MODID, "menu_action"));
-
-    public static final StreamCodec<RegistryFriendlyByteBuf, MenuActionPacket> CODEC = StreamCodec.of(
+    public static final AbyssPacketCodec<MenuActionPacket> CODEC = AbyssPacketCodec.of(
             (buf, pkt) -> {
                 buf.writeInt(pkt.action().ordinal());
                 buf.writeBoolean(pkt.targetUUID() != null);
@@ -69,6 +61,4 @@ public record MenuActionPacket(
             }
     );
 
-    @Override
-    public Type<? extends CustomPacketPayload> type() { return TYPE; }
 }

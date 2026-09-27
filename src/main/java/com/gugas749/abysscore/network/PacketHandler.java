@@ -1,9 +1,12 @@
 package com.gugas749.abysscore.network;
 
+import com.gugas749.abysscore.Abysscore;
+import com.gugas749.abysscore.api.attachment.SyncAttachmentClientHandler;
+import com.gugas749.abysscore.api.attachment.SyncAttachmentPacket;
+import com.gugas749.abysscore.api.network.AbyssNetworkChannel;
 import com.gugas749.abysscore.api.network.AbyssPacketHandler;
 import com.gugas749.abysscore.client.ACVanishHudHandler;
-import com.gugas749.abysscore.client.ui.AbyssCoreMenuScreen;
-import com.gugas749.abysscore.client.ui.screens.*;
+import com.gugas749.abysscore.client.ui.screens.BlindScreen;
 import com.gugas749.abysscore.features.regions.ACNoEntryListener;
 import com.gugas749.abysscore.network.binds.KeyPressHandler;
 import com.gugas749.abysscore.network.binds.KeyPressPacket;
@@ -13,80 +16,86 @@ import com.gugas749.abysscore.network.bulk.SubmitBulkCommandPacket;
 import com.gugas749.abysscore.network.dimen.DimenPacketHandlers;
 import com.gugas749.abysscore.network.dimen.OpenDimenCreateScreenPacket;
 import com.gugas749.abysscore.network.dimen.SubmitDimenCreatePacket;
-import com.gugas749.abysscore.network.menu.packets.*;
 import com.gugas749.abysscore.network.menu.MenuPacketHandlers;
-import com.gugas749.abysscore.network.menu.packets.OpenMainMenuPacket;
+import com.gugas749.abysscore.network.menu.packets.*;
 import com.gugas749.abysscore.network.region.*;
 import com.gugas749.abysscore.network.vanish.VanishStateSyncPacket;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public class PacketHandler {
 
-    public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar("2");
+    /** AbyssCore's own channel. Bump the version string whenever a packet's fields change. */
+    public static final AbyssNetworkChannel CHANNEL =
+            AbyssNetworkChannel.create(Abysscore.asResource("main"), "2");
+
+    /**
+     * Called once from the mod constructor.
+     * ORDER MATTERS: each registration gets the next index (0, 1, 2...), and client and
+     * server must agree on it. Always add new packets at the END of this method.
+     */
+    public static void register() {
 
         // ── S2C ──────────────────────────────────────────────────────────────
 
-        AbyssPacketHandler.registerS2C(registrar,
-            OpenDimenCreateScreenPacket.TYPE, OpenDimenCreateScreenPacket.CODEC,
-            () -> (pkt, ctx) -> ctx.enqueueWork(() ->
-                net.minecraft.client.Minecraft.getInstance().setScreen(new DimenCreateScreen())));
-
-        AbyssPacketHandler.registerS2C(registrar,
-            VanishStateSyncPacket.TYPE, VanishStateSyncPacket.CODEC,
+        AbyssPacketHandler.registerS2C(CHANNEL,
+            VanishStateSyncPacket.class, VanishStateSyncPacket.CODEC,
             () -> ACVanishHudHandler::handleSync);
 
-        AbyssPacketHandler.registerS2C(registrar,
-            OpenRegionScreenPacket.TYPE, OpenRegionScreenPacket.CODEC,
-            () -> (pkt, ctx) -> ctx.enqueueWork(() ->
-                net.minecraft.client.Minecraft.getInstance().setScreen(new RegionManagerScreen(pkt.regions()))));
-
-        AbyssPacketHandler.registerS2C(registrar,
-            NoEntryPacket.TYPE, NoEntryPacket.CODEC,
+        AbyssPacketHandler.registerS2C(CHANNEL,
+            NoEntryPacket.class, NoEntryPacket.CODEC,
             () -> NoEntryHandler::handlePacket);
 
-        AbyssPacketHandler.registerS2C(registrar,
-            BlindSyncPacket.TYPE, BlindSyncPacket.CODEC,
+        AbyssPacketHandler.registerS2C(CHANNEL,
+            BlindSyncPacket.class, BlindSyncPacket.CODEC,
             () -> BlindScreen::handleSync);
 
-        AbyssPacketHandler.registerS2C(registrar,
-            OpenMainMenuPacket.TYPE, OpenMainMenuPacket.CODEC,
-            () -> (pkt, ctx) -> ctx.enqueueWork(() ->
-                net.minecraft.client.Minecraft.getInstance().setScreen(new AbyssCoreMenuScreen(pkt))));
+        AbyssPacketHandler.registerS2C(CHANNEL,
+            SyncAttachmentPacket.class, SyncAttachmentPacket.CODEC,
+            () -> SyncAttachmentClientHandler::handle);
+
+        AbyssPacketHandler.registerS2C(CHANNEL,
+            OpenDimenCreateScreenPacket.class, OpenDimenCreateScreenPacket.CODEC,
+            () -> ClientPacketHandler::handleOpenDimenCreate);
+
+        AbyssPacketHandler.registerS2C(CHANNEL,
+            OpenRegionScreenPacket.class, OpenRegionScreenPacket.CODEC,
+            () -> ClientPacketHandler::handleOpenRegionScreen);
+
+        AbyssPacketHandler.registerS2C(CHANNEL,
+            OpenMainMenuPacket.class, OpenMainMenuPacket.CODEC,
+            () -> ClientPacketHandler::handleOpenMainMenu);
 
         // ── C2S ──────────────────────────────────────────────────────────────
 
-        AbyssPacketHandler.registerC2S(registrar,
-            KeyPressPacket.TYPE, KeyPressPacket.CODEC,
+        AbyssPacketHandler.registerC2S(CHANNEL,
+            KeyPressPacket.class, KeyPressPacket.CODEC,
             KeyPressHandler::handle);
 
-        AbyssPacketHandler.registerC2S(registrar,
-            SubmitBulkCommandPacket.TYPE, SubmitBulkCommandPacket.CODEC,
+        AbyssPacketHandler.registerC2S(CHANNEL,
+            SubmitBulkCommandPacket.class, SubmitBulkCommandPacket.CODEC,
             SubmitBulkCommandHandler::handle);
 
-        AbyssPacketHandler.registerC2S(registrar,
-            SubmitDimenCreatePacket.TYPE, SubmitDimenCreatePacket.CODEC,
+        AbyssPacketHandler.registerC2S(CHANNEL,
+            SubmitDimenCreatePacket.class, SubmitDimenCreatePacket.CODEC,
             DimenPacketHandlers::handleCreate);
 
-        AbyssPacketHandler.registerC2S(registrar,
-            SubmitRegionUpdatePacket.TYPE, SubmitRegionUpdatePacket.CODEC,
+        AbyssPacketHandler.registerC2S(CHANNEL,
+            SubmitRegionUpdatePacket.class, SubmitRegionUpdatePacket.CODEC,
             RegionScreenPacketHandlers::handleRegionUpdate);
 
-        AbyssPacketHandler.registerC2S(registrar,
-            ReadyToTeleportPacket.TYPE, ReadyToTeleportPacket.CODEC,
+        AbyssPacketHandler.registerC2S(CHANNEL,
+            ReadyToTeleportPacket.class, ReadyToTeleportPacket.CODEC,
             ACNoEntryListener::handleReadyToTeleport);
 
-        AbyssPacketHandler.registerC2S(registrar,
-            MenuActionPacket.TYPE, MenuActionPacket.CODEC,
+        AbyssPacketHandler.registerC2S(CHANNEL,
+            MenuActionPacket.class, MenuActionPacket.CODEC,
             MenuPacketHandlers::handleAction);
 
-        AbyssPacketHandler.registerC2S(registrar,
-            SaveTitlePacket.TYPE, SaveTitlePacket.CODEC,
+        AbyssPacketHandler.registerC2S(CHANNEL,
+            SaveTitlePacket.class, SaveTitlePacket.CODEC,
             MenuPacketHandlers::handleSaveTitle);
 
-        AbyssPacketHandler.registerC2S(registrar,
-            RequestRegionScreenPacket.TYPE, RequestRegionScreenPacket.CODEC,
+        AbyssPacketHandler.registerC2S(CHANNEL,
+            RequestRegionScreenPacket.class, RequestRegionScreenPacket.CODEC,
             RegionScreenPacketHandlers::handleRequest);
     }
 }

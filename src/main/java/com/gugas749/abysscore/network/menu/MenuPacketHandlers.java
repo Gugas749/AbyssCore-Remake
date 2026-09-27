@@ -15,7 +15,7 @@ import com.gugas749.abysscore.network.menu.packets.SaveTitlePacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import com.gugas749.abysscore.api.network.AbyssPacketContext;
 
 import java.util.*;
 
@@ -76,7 +76,7 @@ public class MenuPacketHandlers {
 
     // ── Handle action ─────────────────────────────────────────────────────────
 
-    public static void handleAction(MenuActionPacket packet, IPayloadContext ctx) {
+    public static void handleAction(MenuActionPacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer op)) return;
             if (!op.hasPermissions(2)) return;
@@ -155,7 +155,7 @@ public class MenuPacketHandlers {
 
     // ── Handle save title ─────────────────────────────────────────────────────
 
-    public static void handleSaveTitle(SaveTitlePacket packet, IPayloadContext ctx) {
+    public static void handleSaveTitle(SaveTitlePacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer op)) return;
             if (!op.hasPermissions(2)) return;

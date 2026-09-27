@@ -1,11 +1,8 @@
 package com.gugas749.abysscore.network.bulk;
 
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import com.gugas749.abysscore.api.network.AbyssPacketCodec;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -15,22 +12,23 @@ public record SubmitBulkCommandPacket(
     String name,
     int permLevel,
     List<String> commands
-) implements CustomPacketPayload {
+) {
 
-    public static final Type<SubmitBulkCommandPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath("abysscore", "submit_bulk_command"));
-
-    public static final StreamCodec<RegistryFriendlyByteBuf, SubmitBulkCommandPacket> CODEC =
-        StreamCodec.composite(
-            ByteBufCodecs.STRING_UTF8,
-            SubmitBulkCommandPacket::name,
-            ByteBufCodecs.INT,
-            SubmitBulkCommandPacket::permLevel,
-            ByteBufCodecs.collection(java.util.ArrayList::new, ByteBufCodecs.STRING_UTF8),
-            SubmitBulkCommandPacket::commands,
-            SubmitBulkCommandPacket::new
-        );
-
-    @Override
-    public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    public static final AbyssPacketCodec<SubmitBulkCommandPacket> CODEC = AbyssPacketCodec.of(
+        (buf, pkt) -> {
+            buf.writeUtf(pkt.name());
+            buf.writeInt(pkt.permLevel());
+            // Lists: write the size first, then each element
+            buf.writeInt(pkt.commands().size());
+            for (String cmd : pkt.commands()) buf.writeUtf(cmd);
+        },
+        buf -> {
+            String name = buf.readUtf();
+            int permLevel = buf.readInt();
+            int count = buf.readInt();
+            List<String> commands = new ArrayList<>();
+            for (int i = 0; i < count; i++) commands.add(buf.readUtf());
+            return new SubmitBulkCommandPacket(name, permLevel, commands);
+        }
+    );
 }

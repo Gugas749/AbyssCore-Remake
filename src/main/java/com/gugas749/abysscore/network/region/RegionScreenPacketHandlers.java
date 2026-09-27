@@ -5,8 +5,8 @@ import com.gugas749.abysscore.features.regions.ACRegionSavedData;
 import com.gugas749.abysscore.network.menu.packets.RequestRegionScreenPacket;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import com.gugas749.abysscore.network.PacketHandler;
+import com.gugas749.abysscore.api.network.AbyssPacketContext;
 
 import java.util.ArrayList;
 
@@ -17,7 +17,7 @@ public class RegionScreenPacketHandlers {
      * Server builds the region list and sends OpenRegionScreenPacket back.
      * Extracted from the inline lambda in PacketHandler.
      */
-    public static void handleRequest(RequestRegionScreenPacket packet, IPayloadContext ctx) {
+    public static void handleRequest(RequestRegionScreenPacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer op)) return;
             if (!op.hasPermissions(2)) return;
@@ -34,14 +34,14 @@ public class RegionScreenPacketHandlers {
                 ));
             }
 
-            PacketDistributor.sendToPlayer(op, new OpenRegionScreenPacket(entries));
+            PacketHandler.CHANNEL.sendToPlayer(op, new OpenRegionScreenPacket(entries));
         });
     }
 
     /**
      * C2S: client submits updated tags / delete for a region.
      */
-    public static void handleRegionUpdate(SubmitRegionUpdatePacket packet, IPayloadContext ctx) {
+    public static void handleRegionUpdate(SubmitRegionUpdatePacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             if (!player.hasPermissions(2)) return;

@@ -5,13 +5,13 @@ import com.gugas749.abysscore.features.dimen.ACDimensionData;
 import com.gugas749.abysscore.features.dimen.ACDimensionManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import com.gugas749.abysscore.api.network.AbyssPacketContext;
 
 import java.util.Random;
 
 public class DimenPacketHandlers {
 
-    public static void handleCreate(SubmitDimenCreatePacket packet, IPayloadContext ctx) {
+    public static void handleCreate(SubmitDimenCreatePacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             if (!player.hasPermissions(2)) return;

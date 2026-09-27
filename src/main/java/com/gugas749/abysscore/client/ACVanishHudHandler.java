@@ -4,11 +4,11 @@ import com.gugas749.abysscore.network.vanish.VanishStateSyncPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.client.event.RenderGuiEvent;
+import com.gugas749.abysscore.api.network.AbyssPacketContext;
 
 @OnlyIn(Dist.CLIENT)
 public class ACVanishHudHandler {
@@ -16,7 +16,7 @@ public class ACVanishHudHandler {
     private static boolean isVanished = false;
     private static long vanishedSince = 0;
 
-    public static void handleSync(VanishStateSyncPacket packet, IPayloadContext ctx) {
+    public static void handleSync(VanishStateSyncPacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> {
             boolean wasVanished = isVanished;
             isVanished = packet.vanished();

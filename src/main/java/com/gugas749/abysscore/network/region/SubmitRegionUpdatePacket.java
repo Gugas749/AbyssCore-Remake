@@ -1,10 +1,6 @@
 package com.gugas749.abysscore.network.region;
 
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
-
+import com.gugas749.abysscore.api.network.AbyssPacketCodec;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -13,12 +9,9 @@ public record SubmitRegionUpdatePacket(
     boolean delete,
     Set<String> tags,
     String entryFilterTag   // empty = no filter
-) implements CustomPacketPayload {
+) {
 
-    public static final Type<SubmitRegionUpdatePacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath("abysscore", "submit_region_update"));
-
-    public static final StreamCodec<FriendlyByteBuf, SubmitRegionUpdatePacket> CODEC = StreamCodec.of(
+    public static final AbyssPacketCodec<SubmitRegionUpdatePacket> CODEC = AbyssPacketCodec.of(
         (buf, pkt) -> {
             buf.writeUtf(pkt.regionName());
             buf.writeBoolean(pkt.delete());
@@ -37,6 +30,4 @@ public record SubmitRegionUpdatePacket(
         }
     );
 
-    @Override
-    public Type<? extends CustomPacketPayload> type() { return TYPE; }
 }

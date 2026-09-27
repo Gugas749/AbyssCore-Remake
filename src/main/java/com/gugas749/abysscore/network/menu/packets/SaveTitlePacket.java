@@ -1,11 +1,5 @@
 package com.gugas749.abysscore.network.menu.packets;
 
-import com.gugas749.abysscore.Abysscore;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
-
 public record SaveTitlePacket(
     String id,           // empty = create new
     String name,
@@ -14,12 +8,9 @@ public record SaveTitlePacket(
     int fadeIn,
     int stay,
     int fadeOut
-) implements CustomPacketPayload {
+) {
 
-    public static final Type<SaveTitlePacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(Abysscore.MODID, "save_title"));
-
-    public static final StreamCodec<RegistryFriendlyByteBuf, SaveTitlePacket> CODEC = StreamCodec.of(
+    public static final AbyssPacketCodec<SaveTitlePacket> CODEC = AbyssPacketCodec.of(
             (buf, pkt) -> {
                 buf.writeUtf(pkt.id());
                 buf.writeUtf(pkt.name());
@@ -35,6 +26,4 @@ public record SaveTitlePacket(
             )
     );
 
-    @Override
-    public Type<? extends CustomPacketPayload> type() { return TYPE; }
 }

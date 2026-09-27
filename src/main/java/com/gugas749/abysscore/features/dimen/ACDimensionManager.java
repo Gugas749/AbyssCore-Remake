@@ -6,7 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.gugas749.abysscore.Abysscore;
 import net.minecraft.server.MinecraftServer;
-import net.neoforged.fml.loading.FMLPaths;
+import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -229,7 +229,7 @@ public class ACDimensionManager {
             Files.writeString(packMeta, """
                 {
                   "pack": {
-                    "pack_format": 48,
+                    "pack_format": 15,
                     "description": "AbyssCore managed dimensions"
                   }
                 }

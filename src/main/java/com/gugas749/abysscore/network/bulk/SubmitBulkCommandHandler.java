@@ -5,7 +5,7 @@ import com.gugas749.abysscore.features.bulk.BulkCommandData;
 import com.gugas749.abysscore.features.bulk.BulkCommandManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import com.gugas749.abysscore.api.network.AbyssPacketContext;
 
 /**
  * Handles SubmitBulkCommandPacket on the SERVER side.
@@ -13,7 +13,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  */
 public class SubmitBulkCommandHandler {
 
-    public static void handle(SubmitBulkCommandPacket packet, IPayloadContext ctx) {
+    public static void handle(SubmitBulkCommandPacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
 

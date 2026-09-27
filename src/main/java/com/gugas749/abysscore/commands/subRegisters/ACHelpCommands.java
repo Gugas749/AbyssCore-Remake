@@ -137,7 +137,7 @@ public class ACHelpCommands {
         );
 
         all.forEach(req -> source.sendSuccess(
-            () -> Component.literal("  §e" + req.playerName + "§7: §f" + req.reason),
+            () -> Component.literal("  \u00a7e" + req.playerName + "\u00a77: \u00a7f" + req.reason),
             false
         ));
 

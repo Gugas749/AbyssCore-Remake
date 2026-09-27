@@ -3,10 +3,10 @@ package com.gugas749.abysscore.features.vanish;
 import com.gugas749.abysscore.Abysscore;
 import com.gugas749.abysscore.network.vanish.VanishStateSyncPacket;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.TickEvent;
+import com.gugas749.abysscore.network.PacketHandler;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -27,7 +27,7 @@ public class ACVanishStateListener {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         boolean vanished = isVanished(player);
         lastKnownState.put(player.getUUID(), vanished);
-        PacketDistributor.sendToPlayer(player, new VanishStateSyncPacket(vanished));
+        PacketHandler.CHANNEL.sendToPlayer(player, new VanishStateSyncPacket(vanished));
     }
 
     @SubscribeEvent
@@ -37,8 +37,10 @@ public class ACVanishStateListener {
     }
 
     @SubscribeEvent
-    public void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+    public void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        // Forge fires START and END each tick; NeoForge's PlayerTickEvent.Post == END
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player)) return;
         if (player.level().isClientSide()) return;
         if (player.tickCount % 20 != 0) return;
 
@@ -47,7 +49,7 @@ public class ACVanishStateListener {
 
         if (lastState == null || lastState != currentlyVanished) {
             lastKnownState.put(player.getUUID(), currentlyVanished);
-            PacketDistributor.sendToPlayer(player, new VanishStateSyncPacket(currentlyVanished));
+            PacketHandler.CHANNEL.sendToPlayer(player, new VanishStateSyncPacket(currentlyVanished));
         }
     }
 

@@ -7,7 +7,7 @@ import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
+import com.gugas749.abysscore.network.PacketHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -138,7 +138,7 @@ public class BulkCommandScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mx, double my, double sx, double sy) {
+    public boolean mouseScrolled(double mx, double my, double sy) {
         int listY = py + AbyssUI.HEADER_H + PAD * 2 + 34 + 34;
         if (AbyssUI.isHovered(mx, my, px + PAD, listY, W - PAD * 2, VISIBLE_ROWS * ROW_H)) {
             scrollOffset -= (int) Math.signum(sy);
@@ -146,7 +146,7 @@ public class BulkCommandScreen extends Screen {
             rebuildWithState();
             return true;
         }
-        return super.mouseScrolled(mx, my, sx, sy);
+        return super.mouseScrolled(mx, my, sy);
     }
 
     private void onSave() {
@@ -157,7 +157,7 @@ public class BulkCommandScreen extends Screen {
             .filter(s -> !s.isEmpty())
             .collect(Collectors.toList());
         if (cmds.isEmpty()) return;
-        PacketDistributor.sendToServer(new SubmitBulkCommandPacket(
+        PacketHandler.CHANNEL.sendToServer(new SubmitBulkCommandPacket(
             name, permButton != null ? permButton.getValue() : 0, cmds));
         net.minecraft.client.Minecraft.getInstance().setScreen(previousScreen);
     }
@@ -257,5 +257,4 @@ public class BulkCommandScreen extends Screen {
     }
 
     @Override public boolean isPauseScreen() { return false; }
-    @Override public void renderBackground(GuiGraphics g, int mx, int my, float delta) {}
 }

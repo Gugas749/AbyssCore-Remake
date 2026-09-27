@@ -1,6 +1,6 @@
 package com.gugas749.abysscore.api.damages;
 
-import net.minecraft.data.worldgen.BootstrapContext;
+import net.minecraft.data.worldgen.BootstapContext;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.damagesource.CombatEntry;
 import net.minecraft.world.damagesource.CombatTracker;
@@ -85,7 +85,7 @@ public class DamageTypeBuilder {
         return new DamageType(msgId, scaling, exhaustion, effects, deathMessageType);
     }
 
-    public DamageType register(BootstrapContext<DamageType> ctx) {
+    public DamageType register(BootstapContext<DamageType> ctx) {
         DamageType type = build();
         ctx.register(key, type);
         return type;

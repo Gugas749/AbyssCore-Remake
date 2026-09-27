@@ -1,7 +1,7 @@
 package com.gugas749.abysscore.api.command;
 
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.RegisterCommandsEvent;
 
 import java.util.List;
 
@@ -9,7 +9,7 @@ public abstract class AbyssCommandRegistrar {
 
 
     // In the mod's main class constructor:
-    //    NeoForge.EVENT_BUS.register(new ModCommands());
+    //    MinecraftForge.EVENT_BUS.register(new ModCommands());
     /*
     *
     *       EXAMPLE OF USE

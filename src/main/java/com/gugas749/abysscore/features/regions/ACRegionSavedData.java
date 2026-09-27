@@ -2,7 +2,6 @@ package com.gugas749.abysscore.features.regions;
 
 import com.gugas749.abysscore.Abysscore;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -17,18 +16,23 @@ import java.util.Optional;
 public class ACRegionSavedData extends SavedData {
 
     private static final String DATA_NAME = Abysscore.MODID + "_regions";
-    private static final Factory<ACRegionSavedData> FACTORY = new Factory<>(
-            ACRegionSavedData::new,
-            ACRegionSavedData::load
-    );
 
     private final Map<String, ACRegion> regions = new LinkedHashMap<>();
 
+    /**
+     * 1.20.1 computeIfAbsent takes (loader, factory, name) directly.
+     * (1.21 wraps loader + factory in a SavedData.Factory record instead.)
+     */
     public static ACRegionSavedData get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(FACTORY, DATA_NAME);
+        return level.getDataStorage().computeIfAbsent(
+                ACRegionSavedData::load,   // existing file  → read it
+                ACRegionSavedData::new,    // no file yet    → empty data
+                DATA_NAME
+        );
     }
 
-    private static ACRegionSavedData load(CompoundTag tag, HolderLookup.Provider provider) {
+    // 1.20.1: no HolderLookup.Provider parameter
+    private static ACRegionSavedData load(CompoundTag tag) {
         ACRegionSavedData data = new ACRegionSavedData();
         ListTag regionTags = tag.getList("regions", Tag.TAG_COMPOUND);
 
@@ -41,7 +45,7 @@ public class ACRegionSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
+    public CompoundTag save(CompoundTag tag) {
         ListTag regionTags = new ListTag();
 
         for (ACRegion region : regions.values()) {

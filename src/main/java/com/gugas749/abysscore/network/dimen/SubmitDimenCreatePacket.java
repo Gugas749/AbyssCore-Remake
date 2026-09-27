@@ -1,30 +1,26 @@
 package com.gugas749.abysscore.network.dimen;
 
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import com.gugas749.abysscore.api.network.AbyssPacketCodec;
 
 public record SubmitDimenCreatePacket(
         String name,
         String displayName,
         String style,     // "NORMAL", "SUPERFLAT", or "VOID"
         long   seed       // only used when style is NORMAL
-) implements CustomPacketPayload {
+) {
 
-    public static final Type<SubmitDimenCreatePacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("abysscore", "submit_dimen_create"));
-
-    public static final StreamCodec<RegistryFriendlyByteBuf, SubmitDimenCreatePacket> CODEC =
-            StreamCodec.composite(
-                    ByteBufCodecs.STRING_UTF8, SubmitDimenCreatePacket::name,
-                    ByteBufCodecs.STRING_UTF8, SubmitDimenCreatePacket::displayName,
-                    ByteBufCodecs.STRING_UTF8, SubmitDimenCreatePacket::style,
-                    ByteBufCodecs.VAR_LONG,    SubmitDimenCreatePacket::seed,
-                    SubmitDimenCreatePacket::new
-            );
-
-    @Override
-    public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    public static final AbyssPacketCodec<SubmitDimenCreatePacket> CODEC = AbyssPacketCodec.of(
+            (buf, pkt) -> {
+                buf.writeUtf(pkt.name());
+                buf.writeUtf(pkt.displayName());
+                buf.writeUtf(pkt.style());
+                buf.writeVarLong(pkt.seed());
+            },
+            buf -> new SubmitDimenCreatePacket(
+                    buf.readUtf(),
+                    buf.readUtf(),
+                    buf.readUtf(),
+                    buf.readVarLong()
+            )
+    );
 }

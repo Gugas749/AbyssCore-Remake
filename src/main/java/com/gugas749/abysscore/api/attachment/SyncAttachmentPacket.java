@@ -1,28 +1,21 @@
 package com.gugas749.abysscore.api.attachment;
 
-import com.gugas749.abysscore.Abysscore;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import com.gugas749.abysscore.api.network.AbyssPacketCodec;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 
-public record SyncAttachmentPacket(ResourceLocation id, byte[] data) implements CustomPacketPayload {
+/** Server → Client: new value for one AbyssSyncedAttachment. */
+public record SyncAttachmentPacket(ResourceLocation id, CompoundTag data) {
 
-    public static final Type<SyncAttachmentPacket> TYPE =
-            new Type<>(Abysscore.asResource("sync_attachment"));
-
-    public static final StreamCodec<RegistryFriendlyByteBuf, SyncAttachmentPacket> CODEC =
-            StreamCodec.of(
-                    (buf, pkt) -> {
-                        buf.writeResourceLocation(pkt.id());
-                        buf.writeByteArray(pkt.data());
-                    },
-                    buf -> new SyncAttachmentPacket(
-                            buf.readResourceLocation(),
-                            buf.readByteArray()
-                    )
-            );
-
-    @Override
-    public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    public static final AbyssPacketCodec<SyncAttachmentPacket> CODEC = AbyssPacketCodec.of(
+            (buf, pkt) -> {
+                buf.writeResourceLocation(pkt.id());
+                buf.writeNbt(pkt.data());
+            },
+            buf -> {
+                ResourceLocation id = buf.readResourceLocation();
+                CompoundTag data = buf.readNbt();
+                return new SyncAttachmentPacket(id, data != null ? data : new CompoundTag());
+            }
+    );
 }

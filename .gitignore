@@ -1,4 +1,6 @@
 /libs/
-
-/src/main/java/com/gugas749/abysscore/Network/AbyssHelpWebhook.java
 /run/
+/run-data/
+/build/
+/.gradle/
+/PORTING_NOTES.md

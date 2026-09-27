@@ -7,7 +7,7 @@ import com.gugas749.abysscore.features.bulk.BulkCommandManager;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import com.gugas749.abysscore.api.network.AbyssPacketContext;
 
 import java.util.Optional;
 
@@ -16,7 +16,7 @@ import java.util.Optional;
  * Looks up what the player has bound to that slot and executes it.
  */
 public class KeyPressHandler {
-    public static void handle(KeyPressPacket packet, IPayloadContext ctx) {
+    public static void handle(KeyPressPacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
 

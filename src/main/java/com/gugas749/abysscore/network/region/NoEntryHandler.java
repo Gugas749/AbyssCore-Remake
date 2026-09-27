@@ -2,12 +2,12 @@ package com.gugas749.abysscore.network.region;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.client.event.RenderGuiEvent;
+import com.gugas749.abysscore.network.PacketHandler;
+import com.gugas749.abysscore.api.network.AbyssPacketContext;
 
 @OnlyIn(Dist.CLIENT)
 public class NoEntryHandler {
@@ -20,7 +20,7 @@ public class NoEntryHandler {
     private static final long FADE_OUT_MS = 400;
     private static final long TOTAL_MS    = FADE_IN_MS + HOLD_MS + FADE_OUT_MS;
 
-    public static void handlePacket(NoEntryPacket packet, IPayloadContext ctx) {
+    public static void handlePacket(NoEntryPacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> {
             effectStartMs = System.currentTimeMillis();
             teleportSent = false;
@@ -53,7 +53,7 @@ public class NoEntryHandler {
         // Send the teleport signal exactly once when we first hit full black
         if (alpha == 255 && !teleportSent) {
             teleportSent = true;
-            PacketDistributor.sendToServer(new ReadyToTeleportPacket());
+            PacketHandler.CHANNEL.sendToServer(new ReadyToTeleportPacket());
         }
 
         Minecraft mc = Minecraft.getInstance();
