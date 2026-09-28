@@ -1,13 +1,17 @@
 package com.gugas749.abysscore.features.chat;
 
 import com.gugas749.abysscore.AbysscoreServerConfig;
+import com.gugas749.abysscore.api.permission.AbyssPermissionHandler;
+import com.gugas749.abysscore.api.permission.AbyssPermissionLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.ServerChatEvent;
 
+import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 public class ACChatLockListener {
 
@@ -15,13 +19,28 @@ public class ACChatLockListener {
         "say", "me"
     );
 
+    private static final Set<UUID> mutedAdmins = new HashSet<>();
+
+    public static void toggleAdminMute(UUID uuid) {
+        if (mutedAdmins.contains(uuid)) mutedAdmins.remove(uuid);
+        else mutedAdmins.add(uuid);
+    }
+
+    public static boolean isAdminMuted(UUID uuid) {
+        return mutedAdmins.contains(uuid);
+    }
+
     @SubscribeEvent(priority = EventPriority.HIGH)
     public void onChat(ServerChatEvent event) {
         // getPlayer() is already a ServerPlayer — Java 17 rejects a redundant `instanceof ServerPlayer p`
         ServerPlayer player = event.getPlayer();
-        if (player != null && !player.hasPermissions(2)) {
-            if (AbysscoreServerConfig.isChatLockEnabled()) {
-                event.setCanceled(true);
+        if (player != null) {
+            if (AbyssPermissionHandler.has(player, AbyssPermissionLevel.MODERATOR)) {
+                if (isAdminMuted(player.getUUID())) event.setCanceled(true);
+            } else {
+                if (AbysscoreServerConfig.isChatLockEnabled()){
+                    event.setCanceled(true);
+                }
             }
         }
     }

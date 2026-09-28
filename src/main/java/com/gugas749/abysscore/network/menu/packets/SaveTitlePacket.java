@@ -1,13 +1,15 @@
 package com.gugas749.abysscore.network.menu.packets;
 
+import com.gugas749.abysscore.api.network.AbyssPacketCodec;
+
 public record SaveTitlePacket(
-    String id,           // empty = create new
-    String name,
-    String titleText,
-    String subtitleText,
-    int fadeIn,
-    int stay,
-    int fadeOut
+        String id,           // empty = create new
+        String name,
+        String titleText,
+        String subtitleText,
+        int fadeIn,
+        int stay,
+        int fadeOut
 ) {
 
     public static final AbyssPacketCodec<SaveTitlePacket> CODEC = AbyssPacketCodec.of(
