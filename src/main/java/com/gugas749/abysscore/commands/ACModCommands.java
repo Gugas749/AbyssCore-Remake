@@ -6,6 +6,7 @@ import com.gugas749.abysscore.api.permission.AbyssPermissionHandler;
 import com.gugas749.abysscore.api.permission.AbyssPermissionLevel;
 import com.gugas749.abysscore.commands.subRegisters.*;
 import com.gugas749.abysscore.features.bulk.BulkCommandManager;
+import com.gugas749.abysscore.features.chat.ACChatLockListener;
 import com.gugas749.abysscore.features.title.ACTitleManager;
 import com.gugas749.abysscore.network.menu.MenuPacketHandlers;
 import com.mojang.brigadier.CommandDispatcher;
@@ -56,6 +57,19 @@ public class ACModCommands {
                                     BulkCommandManager.load();
                                     ctx.getSource().sendSuccess(
                                             () -> Component.literal("[AbyssCore] Reloaded."), true);
+                                    return 1;
+                                })
+                        )
+
+                        .then(Commands.literal("chat")
+                                .requires(source -> AbyssPermissionHandler.sourceHas(source, AbyssPermissionLevel.ADMIN))
+                                .executes(ctx -> {
+                                    if (!(ctx.getSource().getEntity() instanceof ServerPlayer player)) return 0;
+                                    ACChatLockListener.toggleAdminMute(player.getUUID());
+                                    boolean muted = ACChatLockListener.isAdminMuted(player.getUUID());
+                                    ctx.getSource().sendSuccess(
+                                            () -> Component.literal("[AbyssCore] Your chat is now " + (muted ? "muted" : "active") + "."),
+                                            false);
                                     return 1;
                                 })
                         )

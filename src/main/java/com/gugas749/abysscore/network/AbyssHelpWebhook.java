@@ -1,5 +1,8 @@
 package com.gugas749.abysscore.network;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.gugas749.abysscore.AbysscoreServerConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,40 +19,52 @@ public class AbyssHelpWebhook {
 
     public static void sendDCMessage(String playerName, String playerUUID, String reason) {
         if (!AbysscoreServerConfig.isHelpWebhookEnabled()) return;
-        String DISCORD_WEBHOOK_URL = AbysscoreServerConfig.getHelpWebhookUrl();
-
-        if (DISCORD_WEBHOOK_URL.isBlank()) {
+        String webhookUrl = AbysscoreServerConfig.getHelpWebhookUrl();
+        if (webhookUrl.isBlank()) {
             LOGGER.warn("[Abysshelp] Discord webhook URL not configured, skipping log.");
             return;
         }
 
         Thread.ofVirtual().start(() -> {
             try {
-                String timestamp = Instant.now().toString();
+                // Build JSON safely with Gson
+                JsonObject field1 = new JsonObject();
+                field1.addProperty("name", "Player");
+                field1.addProperty("value", "`" + playerName + "`");
+                field1.addProperty("inline", true);
 
-                String payload = """
-                    {
-                        "embeds": [{
-                            "title": "Pedido de ajuda - AbyssHelp",
-                            "color": %d,
-                            "fields": [
-                                { "name": "Player", "value": "`%s`", "inline": true },
-                                { "name": "UUID", "value": "`%s`", "inline": true },
-                                { "name": "Reason", "value": "%s", "inline": false }
-                            ],
-                            "footer": { "text": "AbyssCore" },
-                            "timestamp": "%s"
-                        }]
-                    }
-                    """.formatted(
-                        0x0000FF,
-                        playerName,
-                        playerUUID,
-                        reason,
-                        timestamp
-                    );
+                JsonObject field2 = new JsonObject();
+                field2.addProperty("name", "UUID");
+                field2.addProperty("value", "`" + playerUUID + "`");
+                field2.addProperty("inline", true);
 
-                URL url = new URL(DISCORD_WEBHOOK_URL);
+                JsonObject field3 = new JsonObject();
+                field3.addProperty("name", "Reason");
+                field3.addProperty("value", reason);
+                field3.addProperty("inline", false);
+
+                JsonArray fields = new JsonArray();
+                fields.add(field1); fields.add(field2); fields.add(field3);
+
+                JsonObject footer = new JsonObject();
+                footer.addProperty("text", "AbyssCore");
+
+                JsonObject embed = new JsonObject();
+                embed.addProperty("title", "Pedido de ajuda - AbyssHelp");
+                embed.addProperty("color", 0x0000FF);
+                embed.add("fields", fields);
+                embed.add("footer", footer);
+                embed.addProperty("timestamp", Instant.now().toString());
+
+                JsonArray embeds = new JsonArray();
+                embeds.add(embed);
+
+                JsonObject payload = new JsonObject();
+                payload.add("embeds", embeds);
+
+                String json = new Gson().toJson(payload);
+
+                URL url = new URL(webhookUrl);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setRequestProperty("Content-Type", "application/json");
@@ -58,18 +73,16 @@ public class AbyssHelpWebhook {
                 connection.setReadTimeout(5000);
 
                 try (OutputStream os = connection.getOutputStream()) {
-                    os.write(payload.getBytes(StandardCharsets.UTF_8));
+                    os.write(json.getBytes(StandardCharsets.UTF_8));
                 }
 
                 int responseCode = connection.getResponseCode();
                 if (responseCode >= 200 && responseCode < 300) {
                     LOGGER.info("[Abysshelp] Discord webhook sent for player '{}'.", playerName);
                 } else {
-                    LOGGER.warn("[Abysshelp] Discord webhook returned unexpected status: {}", responseCode);
+                    LOGGER.warn("[Abysshelp] Discord webhook returned status: {}", responseCode);
                 }
-
                 connection.disconnect();
-
             } catch (Exception e) {
                 LOGGER.warn("[Abysshelp] Failed to send Discord webhook: {}", e.getMessage());
             }
