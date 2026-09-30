@@ -1,48 +1,46 @@
 package com.gugas749.abysscore.client.ui;
 
-import com.gugas749.abysscore.client.ui.screens.*;
+import com.gugas749.abysscore.api.gui.dialog.AbyssDialog;
+import com.gugas749.abysscore.api.gui.layout.AbyssLayout;
+import com.gugas749.abysscore.api.gui.render.AbyssDraw;
+import com.gugas749.abysscore.api.gui.screen.AbyssPanelScreen;
+import com.gugas749.abysscore.api.gui.screen.AbyssTab;
+import com.gugas749.abysscore.api.gui.screen.TabContext;
+import com.gugas749.abysscore.api.gui.theme.AbyssTheme;
+import com.gugas749.abysscore.api.gui.widget.*;
+import com.gugas749.abysscore.client.ui.screens.BulkCommandScreen;
+import com.gugas749.abysscore.client.ui.screens.DimenCreateScreen;
+import com.gugas749.abysscore.client.ui.screens.RegionManagerScreen;
+import net.neoforged.neoforge.network.PacketDistributor;
 import com.gugas749.abysscore.network.menu.packets.MenuActionPacket;
 import com.gugas749.abysscore.network.menu.packets.OpenMainMenuPacket;
-import com.gugas749.abysscore.network.menu.packets.SaveTitlePacket;
 import com.gugas749.abysscore.network.menu.packets.RequestRegionScreenPacket;
-import net.minecraft.client.Minecraft;
+import com.gugas749.abysscore.network.menu.packets.SaveTitlePacket;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
-public class AbyssCoreMenuScreen extends Screen {
+/**
+ * The AbyssCore staff menu (/abysscore). One tab per category.
+ *
+ * Every tab follows the same pattern: a list, you SELECT a row, and the buttons below the
+ * list act on the selection. (The old screen drew fake buttons inside every row and matched
+ * clicks against hand-written pixel boxes — now every button is a real widget.)
+ *
+ * The data comes from OpenMainMenuPacket. Tabs are inner classes so they can use the screen's
+ * lists directly, and each keeps its own state (selection, edit mode, drafts) in FIELDS, so
+ * switching tabs, resizing or closing a dialog never loses it.
+ */
+public class AbyssCoreMenuScreen extends AbyssPanelScreen {
 
-    // ── Categories ────────────────────────────────────────────────────────────
-    private static final String[] CATS = {
-        "Players", "Titles", "Vanish",
-        "Regions", "Dimensions", "Help Requests", "Bulk Commands"
-    };
+    private static final int ROW_H = 14;
+    private static final int BTN_GAP = 4;
 
-    // Icons (Minecraft font symbols used as visual anchors)
-    private static final String[] CAT_ICONS = {
-        "\u2605", // ★ Players
-        "\u2736", // ✶ Titles
-        "\u25CE", // ◎ Vanish
-        "\u25A6", // ▦ Regions
-        "\u2318", // ⌘ Dimensions
-        "\u2709", // ✉ Help
-        "\u2630"  // ☰ Bulk
-    };
-
-    // ── Layout ────────────────────────────────────────────────────────────────
-    private static final int PAD      = AbyssUI.PAD;
-    private static final int SIDE_W   = AbyssUI.SIDEBAR_W;
-    private static final int ROW_H    = AbyssUI.ROW_H;
-    private static final int BTN_SM   = AbyssUI.BTN_W_SM;
-
-    // Panel computed at init
-    private int px, py, pw, ph;
-
-    // ── Data ──────────────────────────────────────────────────────────────────
+    // ── Data from the server ──────────────────────────────────────────────────
     private final List<OpenMainMenuPacket.PlayerState> players;
     private final List<OpenMainMenuPacket.TitleEntry>  titles;
     private final List<OpenMainMenuPacket.DimEntry>    dims;
@@ -51,710 +49,538 @@ public class AbyssCoreMenuScreen extends Screen {
     private final Map<Integer, String>                 bindSlots;
     private boolean teamVisibility;
 
-    // ── Navigation ────────────────────────────────────────────────────────────
-    private int selectedCat = 0;
-
-    // ── Scroll ────────────────────────────────────────────────────────────────
-    private int playerScroll = 0, titleScroll = 0, dimScroll = 0;
-    private int helpScroll   = 0, bulkScroll  = 0;
-
-    // ── Title editor ──────────────────────────────────────────────────────────
-    private int editingTitle = -1; // -1=none, -2=new
-    private int runningTitle = -1;
-    private EditBox titleNameBox, titleTextBox, titleSubBox;
-    private EditBox titleFadeInBox, titleStayBox, titleFadeOutBox;
-    private EditBox runTagBox, runTeamBox;
-
     public AbyssCoreMenuScreen(OpenMainMenuPacket pkt) {
-        super(Component.literal("Abyss"));
-        this.players       = new ArrayList<>(pkt.players());
-        this.titles        = new ArrayList<>(pkt.titles());
-        this.dims          = new ArrayList<>(pkt.dims());
-        this.helpRequests  = new ArrayList<>(pkt.helpRequests());
-        this.bulkCommands  = new ArrayList<>(pkt.bulkCommands());
-        this.bindSlots     = new LinkedHashMap<>(pkt.bindSlots());
+        super(Component.literal("ABYSS CORE"));
+        this.players        = new ArrayList<>(pkt.players());
+        this.titles         = new ArrayList<>(pkt.titles());
+        this.dims           = new ArrayList<>(pkt.dims());
+        this.helpRequests   = new ArrayList<>(pkt.helpRequests());
+        this.bulkCommands   = new ArrayList<>(pkt.bulkCommands());
+        this.bindSlots      = new LinkedHashMap<>(pkt.bindSlots());
         this.teamVisibility = pkt.teamVisibility();
     }
 
-    // ── Init ──────────────────────────────────────────────────────────────────
+    @Override protected int panelWidth()  { return 430; }
+    @Override protected int panelHeight() { return 260; }
 
     @Override
-    protected void init() {
-        // Full screen minus small margin
-        int mx = PAD * 2, my = PAD * 2;
-        int mw = width  - PAD * 4;
-        int mh = height - PAD * 4;
-
-        // Right panel bounds
-        px = mx + SIDE_W + PAD;
-        py = my;
-        pw = mw - SIDE_W - PAD;
-        ph = mh;
-
-        clearWidgets();
-
-        // Title-editor widgets (only when editing)
-        if (selectedCat == 1 && editingTitle != -1) {
-            initTitleEditor();
-        }
-        if (selectedCat == 1 && runningTitle != -1) {
-            initRunDialog();
-        }
-        // New Title button is drawn manually in renderTitles() using AbyssUI.drawButton
-        // and handled in handleTitleClick() — no vanilla widget needed
+    protected void addTabs(List<AbyssTab> tabs) {
+        tabs.add(new PlayersTab());
+        tabs.add(new TitlesTab());
+        tabs.add(new VanishTab());
+        tabs.add(new RegionsTab());
+        tabs.add(new DimensionsTab());
+        tabs.add(new HelpTab());
+        tabs.add(new BulkTab());
     }
 
-    private void addAbyssButton(int x, int y, int w, int h, String label, boolean danger, Runnable action) {
-        addRenderableWidget(net.minecraft.client.gui.components.Button.builder(
-            Component.literal(label), b -> action.run()
-        ).bounds(x, y, w, h).build());
+    //-----------------------------------------------------------------------------------
+    //                                 SHARED HELPERS
+    //-----------------------------------------------------------------------------------
+
+    private static void send(MenuActionPacket packet) {
+        PacketDistributor.sendToServer(packet);
     }
 
-    private void initTitleEditor() {
-        int x  = px + PAD;
-        int y  = py + AbyssUI.HEADER_H + PAD * 3; // extra top padding
-        int fw = pw - PAD * 2;
-        int third = (fw - 8) / 3;
-
-        titleNameBox = abyssEditBox(x, y, fw, "Name"); y += 30;
-        titleTextBox = abyssEditBox(x, y, fw, "Title text  (&a green  &c red  &e yellow...)"); y += 30;
-        titleSubBox  = abyssEditBox(x, y, fw, "Subtitle (optional)"); y += 30;
-
-        titleFadeInBox  = abyssEditBox(x,              y, third, "Fade in (ticks)");
-        titleStayBox    = abyssEditBox(x + third + 4,  y, third, "Stay (ticks)");
-        titleFadeOutBox = abyssEditBox(x + third*2+8,  y, third, "Fade out (ticks)");
-        y += 30;
-
-        if (editingTitle >= 0 && editingTitle < titles.size()) {
-            var t = titles.get(editingTitle);
-            titleNameBox.setValue(t.name());
-            titleTextBox.setValue(t.titleText());
-            titleSubBox.setValue(t.subtitleText());
-            titleFadeInBox.setValue(String.valueOf(t.fadeIn()));
-            titleStayBox.setValue(String.valueOf(t.stay()));
-            titleFadeOutBox.setValue(String.valueOf(t.fadeOut()));
-        } else {
-            titleFadeInBox.setValue("10");
-            titleStayBox.setValue("70");
-            titleFadeOutBox.setValue("20");
-        }
-        // Save and Cancel are drawn in renderTitles() and handled in handleTitleClick()
+    /** A row of buttons along the bottom of the content area. */
+    private static AbyssLayout.Flow bottomRow(TabContext ctx) {
+        return AbyssLayout.row(ctx.x, ctx.y + ctx.height - AbyssButton.HEIGHT, BTN_GAP);
     }
 
-    private void initRunDialog() {
-        int x  = px + PAD;
-        int y  = py + AbyssUI.HEADER_H + PAD * 3 + 20;
-        int fw = pw - PAD * 2;
-
-        addAbyssButton(x, y, fw, AbyssUI.BTN_H, "Send to ALL players", false, () -> {
-            sendTitle(MenuActionPacket.Action.SEND_TITLE_ALL, titles.get(runningTitle).id(), "");
-            runningTitle = -1; init();
-        }); y += 22;
-
-        runTagBox = abyssEditBox(x, y, fw - BTN_SM - 4, "Scoreboard tag...");
-        addAbyssButton(x + fw - BTN_SM, y, BTN_SM, AbyssUI.BTN_H, "By Tag", false, () -> {
-            sendTitle(MenuActionPacket.Action.SEND_TITLE_TAG, titles.get(runningTitle).id(), runTagBox.getValue().trim());
-            runningTitle = -1; init();
-        }); y += 22;
-
-        runTeamBox = abyssEditBox(x, y, fw - BTN_SM - 4, "Team name...");
-        addAbyssButton(x + fw - BTN_SM, y, BTN_SM, AbyssUI.BTN_H, "By Team", false, () -> {
-            sendTitle(MenuActionPacket.Action.SEND_TITLE_TEAM, titles.get(runningTitle).id(), runTeamBox.getValue().trim());
-            runningTitle = -1; init();
-        }); y += 22;
-
-        addAbyssButton(x, y, 60, AbyssUI.BTN_H, "Cancel", false, () -> { runningTitle = -1; init(); });
+    /** Height left for a list that sits above the bottom button row (and `extra` more pixels). */
+    private static int listHeight(TabContext ctx, int extra) {
+        return ctx.height - AbyssButton.HEIGHT - 6 - extra;
     }
 
-    private EditBox abyssEditBox(int x, int y, int w, String hint) {
-        EditBox box = new EditBox(font, x, y, w, 16, Component.literal(hint));
-        box.setHint(Component.literal(hint));
-        box.setMaxLength(256);
-        box.setBordered(false); // we draw our own border
-        addRenderableWidget(box);
-        return box;
+    /** Right-aligned text inside a list row. */
+    private static void rightText(GuiGraphics g, Font font, Component text, int rowX, int rowY, int rowW, int color) {
+        g.drawString(font, text, rowX + rowW - 4 - font.width(text), rowY + 3, color, false);
     }
 
-    // ── Render ────────────────────────────────────────────────────────────────
+    //-----------------------------------------------------------------------------------
+    //                                     PLAYERS
+    //-----------------------------------------------------------------------------------
 
-    @Override
-    public void render(GuiGraphics g, int mx, int my, float delta) {
-        // Full screen abyss background
-        AbyssUI.drawBackground(g, width, height);
+    /** Online players with their vanish / god / blind state. */
+    private class PlayersTab implements AbyssTab {
+        @Nullable private UUID selected;
+        private AbyssScrollList<OpenMainMenuPacket.PlayerState> list;
 
-        int ox = PAD * 2, oy = PAD * 2;
-        int ow = width  - PAD * 4;
-        int oh = height - PAD * 4;
+        @Override public Component title() { return Component.literal("\u2605 Players"); }
 
-        // Outer container border
-        AbyssUI.drawBorder(g, ox, oy, ow, oh, AbyssUI.BORDER);
+        @Override
+        public void init(TabContext ctx) {
+            Font font = ctx.font();
+            list = ctx.add(new AbyssScrollList<OpenMainMenuPacket.PlayerState>(
+                    ctx.x, ctx.y, ctx.width, listHeight(ctx, 0), ROW_H,
+                    (g, p, x, y, w, h, hover, sel) -> {
+                        g.drawString(font, p.name(), x, y + 3, sel ? AbyssTheme.TEXT_BRIGHT : AbyssTheme.TEXT, false);
+                        // state badges on the right: V G B, lit when ON
+                        badge(g, font, "B", p.blinded(), x + w - 12, y);
+                        badge(g, font, "G", p.godMode(), x + w - 24, y);
+                        badge(g, font, "V", p.vanished(), x + w - 36, y);
+                    }));
+            list.emptyText(Component.literal("No players online."));
+            list.setItems(players);
+            list.setSelected(find(selected));
+            list.onSelect(p -> { selected = p.uuid(); ctx.rebuild(); });
 
-        renderSidebar(g, ox, oy, oh, mx, my);
-        renderPanel(g, mx, my);
-
-        super.render(g, mx, my, delta);
-    }
-
-    // ── Sidebar ───────────────────────────────────────────────────────────────
-
-    private void renderSidebar(GuiGraphics g, int ox, int oy, int oh, int mx, int my) {
-        AbyssUI.drawSidebar(g, ox, oy, SIDE_W, oh);
-
-        // Abyss logo / title area
-        int logoH = 32;
-        g.fill(ox, oy, ox + SIDE_W, oy + logoH, 0xFF060E1E);
-        g.fill(ox, oy + logoH - 1, ox + SIDE_W, oy + logoH, AbyssUI.BORDER_ACTIVE);
-        g.drawCenteredString(font, "\u00a7bABYSS", ox + SIDE_W / 2, oy + 8, AbyssUI.TEXT_ACCENT);
-        g.drawCenteredString(font, "\u00a77CORE", ox + SIDE_W / 2, oy + 18, AbyssUI.TEXT_MUTED);
-
-        // Category rows
-        int catY = oy + logoH + PAD / 2;
-        for (int i = 0; i < CATS.length; i++) {
-            boolean sel  = (i == selectedCat);
-            boolean hov  = AbyssUI.isHovered(mx, my, ox + 1, catY, SIDE_W - 2, ROW_H);
-            String label = CAT_ICONS[i] + "  " + CATS[i];
-            AbyssUI.drawCategoryRow(g, font, ox + 1, catY, SIDE_W - 2, label, sel, hov);
-            catY += ROW_H + 2;
+            // Toggles for the selected player (instead of three tiny ON/OFF boxes per row)
+            OpenMainMenuPacket.PlayerState p = find(selected);
+            var row = bottomRow(ctx);
+            if (p == null) {
+                ctx.add(new AbyssLabel(ctx.x, ctx.y + ctx.height - 14, ctx.width,
+                        Component.literal("Select a player to change their state.")).color(AbyssTheme.TEXT_DIM));
+                return;
+            }
+            row.add(ctx.add(new AbyssToggle(0, 0, Component.literal("Vanish"), p.vanished(), on -> toggle(p.uuid(), 0))));
+            row.space(8);
+            row.add(ctx.add(new AbyssToggle(0, 0, Component.literal("God"), p.godMode(), on -> toggle(p.uuid(), 1))));
+            row.space(8);
+            row.add(ctx.add(new AbyssToggle(0, 0, Component.literal("Blind"), p.blinded(), on -> toggle(p.uuid(), 2))));
         }
 
-        // Version watermark at bottom
-        g.drawCenteredString(font, "\u00a70v0.2.0",
-            ox + SIDE_W / 2, oy + oh - 12, AbyssUI.TEXT_DISABLED);
-    }
-
-    // ── Panel routing ─────────────────────────────────────────────────────────
-
-    private void renderPanel(GuiGraphics g, int mx, int my) {
-        AbyssUI.drawPanel(g, px, py, pw, ph);
-
-        // Header
-        String catLabel = CAT_ICONS[selectedCat] + "  " + CATS[selectedCat];
-        AbyssUI.drawHeader(g, font, px, py, pw, catLabel);
-
-        int contentY = py + AbyssUI.HEADER_H + PAD;
-
-        switch (selectedCat) {
-            case 0 -> renderPlayers(g, contentY, mx, my);
-            case 1 -> renderTitles(g, contentY, mx, my);
-            case 2 -> renderVanish(g, contentY, mx, my);
-            case 3 -> renderRegions(g, contentY);
-            case 4 -> renderDims(g, contentY, mx, my);
-            case 5 -> renderHelp(g, contentY, mx, my);
-            case 6 -> renderBulk(g, contentY, mx, my);
-        }
-    }
-
-    // ── Players panel ─────────────────────────────────────────────────────────
-
-    private void renderPlayers(GuiGraphics g, int y, int mx, int my) {
-        int x = px + PAD;
-
-        // Column headers
-        g.drawString(font, "\u00a77Name",   x,       y, AbyssUI.TEXT_MUTED, false);
-        g.drawString(font, "\u00a77Vanish", x + 140, y, AbyssUI.TEXT_MUTED, false);
-        g.drawString(font, "\u00a77God",    x + 182, y, AbyssUI.TEXT_MUTED, false);
-        g.drawString(font, "\u00a77Blind",  x + 220, y, AbyssUI.TEXT_MUTED, false);
-        y += 12;
-
-        // Divider
-        g.fill(px + PAD, y, px + pw - PAD, y + 1, AbyssUI.BORDER);
-        y += 4;
-
-        if (players.isEmpty()) {
-            drawEmpty(g, "No players online.");
-            return;
+        private void badge(GuiGraphics g, Font font, String letter, boolean on, int x, int y) {
+            g.drawString(font, letter, x, y + 3, on ? AbyssTheme.ACCENT : AbyssTheme.TEXT_OFF, false);
         }
 
-        AbyssUI.scissor(g, px + 1, y, pw - 2, ph - (y - py) - PAD);
-        for (int i = playerScroll; i < players.size(); i++) {
-            var p = players.get(i);
-            int ry = y + (i - playerScroll) * ROW_H;
-            if (ry + ROW_H > py + ph - PAD) break;
-            boolean hov = AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H);
-            AbyssUI.drawRow(g, px + 1, ry, pw - 2, hov, i % 2 == 0);
-            g.drawString(font, p.name(), x, ry + 6, AbyssUI.TEXT, false);
-            AbyssUI.drawToggle(g, font, x + 136, ry + 2, 36, 16, p.vanished());
-            AbyssUI.drawToggle(g, font, x + 178, ry + 2, 36, 16, p.godMode());
-            AbyssUI.drawToggle(g, font, x + 216, ry + 2, 36, 16, p.blinded());
-        }
-        g.disableScissor();
-    }
-
-    // ── Titles panel ──────────────────────────────────────────────────────────
-
-    private void renderTitles(GuiGraphics g, int y, int mx, int my) {
-        int x = px + PAD;
-
-        if (editingTitle != -1) {
-            String sub = editingTitle == -2 ? "New Title" : "Edit — " + titles.get(editingTitle).name();
-            g.drawString(font, "\u00a77" + sub, x, y, AbyssUI.TEXT_MUTED, false);
-
-            // Field backgrounds and labels
-            int fw = pw - PAD * 2;
-            int third = (fw - 8) / 3;
-            int fy = py + AbyssUI.HEADER_H + PAD * 3;
-            drawTitleFieldBg(g, x, fy, fw, "Name"); fy += 30;
-            drawTitleFieldBg(g, x, fy, fw, "Title text"); fy += 30;
-            drawTitleFieldBg(g, x, fy, fw, "Subtitle"); fy += 30;
-            drawTitleFieldBg(g, x,              fy, third, "Fade in"); 
-            drawTitleFieldBg(g, x + third + 4,  fy, third, "Stay");
-            drawTitleFieldBg(g, x + third*2+8,  fy, third, "Fade out");
-            fy += 30;
-
-            // Abyss-style Save / Cancel buttons
-            int saveX = x, cancelX = x + 74;
-            int btnY = fy + PAD;
-            AbyssUI.drawButton(g, font, saveX,   btnY, 70, AbyssUI.BTN_H,
-                "\u00a7bSave",   AbyssUI.isHovered(mx, my, saveX,   btnY, 70, AbyssUI.BTN_H), false);
-            AbyssUI.drawButton(g, font, cancelX, btnY, 70, AbyssUI.BTN_H,
-                "\u00a7cCancel", AbyssUI.isHovered(mx, my, cancelX, btnY, 70, AbyssUI.BTN_H), true);
-            return;
-        }
-        if (runningTitle != -1) {
-            g.drawString(font, "\u00a77Send: \u00a7b" + titles.get(runningTitle).name(), x, y, AbyssUI.TEXT, false);
-            return;
+        @Nullable
+        private OpenMainMenuPacket.PlayerState find(@Nullable UUID id) {
+            return id == null ? null : players.stream().filter(p -> p.uuid().equals(id)).findFirst().orElse(null);
         }
 
-        // + New Title button — same style as Create Dim, positioned at header level
-        int ntbw = 100, ntbh = AbyssUI.BTN_H;
-        int ntbx = px + pw - PAD - ntbw;
-        int ntby = py + AbyssUI.HEADER_H - ntbh - 2; // 10px above content area
-        AbyssUI.drawButton(g, font, ntbx, ntby, ntbw, ntbh,
-            "\u00a7b+ New Title", AbyssUI.isHovered(mx, my, ntbx, ntby, ntbw, ntbh), false);
-
-        y += ROW_H + PAD; // space below header for list
-
-        if (titles.isEmpty()) { drawEmpty(g, "No titles saved. Click + New Title."); return; }
-
-        AbyssUI.scissor(g, px + 1, y, pw - 2, ph - (y - py) - PAD);
-        for (int i = titleScroll; i < titles.size(); i++) {
-            var t = titles.get(i);
-            int ry = y + (i - titleScroll) * ROW_H;
-            if (ry + ROW_H > py + ph - PAD) break;
-            boolean hov = AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H);
-            AbyssUI.drawRow(g, px + 1, ry, pw - 2, hov, i % 2 == 0);
-            g.drawString(font, t.name(), x, ry + 6, AbyssUI.TEXT, false);
-            g.drawString(font, "\u00a70" + shorten(t.titleText(), 30), x + 110, ry + 6, AbyssUI.TEXT_MUTED, false);
-            int bx = px + pw - PAD - BTN_SM * 2 - 4;
-            AbyssUI.drawButton(g, font, bx,          ry + 2, BTN_SM, 16, "\u00a7aRun",  hov, false);
-            AbyssUI.drawButton(g, font, bx+BTN_SM+4, ry + 2, BTN_SM, 16, "\u00a79Edit", hov, false);
-        }
-        g.disableScissor();
-    }
-
-    // ── Vanish panel ──────────────────────────────────────────────────────────
-
-    private void renderVanish(GuiGraphics g, int y, int mx, int my) {
-        int x = px + PAD;
-
-        // Team visibility toggle
-        boolean tvHov = AbyssUI.isHovered(mx, my, x, y, pw - PAD * 2, ROW_H);
-        g.drawString(font, "\u00a77Team Visibility", x, y + 6, AbyssUI.TEXT_MUTED, false);
-        AbyssUI.drawToggle(g, font, px + pw - PAD - 50, y + 2, 50, 16, teamVisibility);
-        y += ROW_H + PAD;
-
-        g.fill(px + PAD, y, px + pw - PAD, y + 1, AbyssUI.BORDER);
-        y += PAD;
-
-        g.drawString(font, "\u00a77Vanished Players", x, y, AbyssUI.TEXT_MUTED, false);
-        y += 14;
-
-        var vanished = players.stream().filter(OpenMainMenuPacket.PlayerState::vanished).toList();
-        if (vanished.isEmpty()) { drawEmpty(g, "No players are vanished."); return; }
-
-        AbyssUI.scissor(g, px + 1, y, pw - 2, ph - (y - py) - PAD);
-        for (int i = 0; i < vanished.size(); i++) {
-            var p = vanished.get(i);
-            int ry = y + i * ROW_H;
-            if (ry + ROW_H > py + ph - PAD) break;
-            boolean hov = AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H);
-            AbyssUI.drawRow(g, px + 1, ry, pw - 2, hov, i % 2 == 0);
-            g.drawString(font, p.name(), x, ry + 6, AbyssUI.TEXT, false);
-            int bx = px + pw - PAD - 46 * 3 - 8;
-            AbyssUI.drawButton(g, font, bx,      ry+2, 44, 16, "\u00a7aShow",  hov, false);
-            AbyssUI.drawButton(g, font, bx+48,   ry+2, 44, 16, "\u00a7cHide",  hov, true);
-            AbyssUI.drawButton(g, font, bx+96,   ry+2, 44, 16, "\u00a77Clear", hov, false);
-        }
-        g.disableScissor();
-    }
-
-    // ── Regions panel ─────────────────────────────────────────────────────────
-
-    private void renderRegions(GuiGraphics g, int y) {
-        int x  = px + PAD;
-        int bw = 160, bh = 20;
-        int bx = px + pw / 2 - bw / 2;
-        int by = py + ph / 2 - bh / 2;
-
-        g.drawString(font, "\u00a77Opens the dedicated Region Manager screen.",
-            x, y, AbyssUI.TEXT_MUTED, false);
-
-        AbyssUI.drawActivePanel(g, bx, by, bw, bh);
-        g.drawCenteredString(font, "\u00a7b\u25A6  Open Region Manager", bx + bw / 2, by + 6, AbyssUI.TEXT_ACCENT);
-    }
-
-    // ── Dimensions panel ──────────────────────────────────────────────────────
-
-    private void renderDims(GuiGraphics g, int y, int mx, int my) {
-        int x = px + PAD;
-
-        // Create dim button — positioned at header level (10px above content area)
-        int cbw = 100, cbh = AbyssUI.BTN_H;
-        int cbx = px + pw - PAD - cbw;
-        int cby = py + AbyssUI.HEADER_H - cbh - 2;
-        AbyssUI.drawButton(g, font, cbx, cby, cbw, cbh, "\u00a7b+ Create Dim", AbyssUI.isHovered(mx, my, cbx, cby, cbw, cbh), false);
-
-        // Column header
-        g.drawString(font, "\u00a77Dimension",     x,       y, AbyssUI.TEXT_MUTED, false);
-        g.drawString(font, "\u00a77Status",  x + 220, y, AbyssUI.TEXT_MUTED, false);
-        y += 12;
-        g.fill(px + PAD, y, px + pw - PAD, y + 1, AbyssUI.BORDER);
-        y += 4;
-
-        if (dims.isEmpty()) { drawEmpty(g, "No dimensions registered."); return; }
-
-        AbyssUI.scissor(g, px + 1, y, pw - 2, ph - (y - py) - PAD);
-        for (int i = dimScroll; i < dims.size(); i++) {
-            var d = dims.get(i);
-            int ry = y + (i - dimScroll) * ROW_H;
-            if (ry + ROW_H > py + ph - PAD) break;
-            boolean hov = AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H);
-            AbyssUI.drawRow(g, px + 1, ry, pw - 2, hov, i % 2 == 0);
-            g.drawString(font, d.name(), x, ry + 6, AbyssUI.TEXT, false);
-            String stateColor = switch (d.state()) {
-                case "LOADED"   -> "\u00a7a";
-                case "UNLOADED" -> "\u00a7c";
-                default         -> "\u00a7e";
+        /** col: 0 = vanish, 1 = god, 2 = blind. Sends it and updates our copy right away. */
+        private void toggle(UUID id, int col) {
+            MenuActionPacket.Action action = switch (col) {
+                case 0 -> MenuActionPacket.Action.TOGGLE_VANISH;
+                case 1 -> MenuActionPacket.Action.TOGGLE_GOD;
+                default -> MenuActionPacket.Action.TOGGLE_BLIND;
             };
-            g.drawString(font, stateColor + d.state().toLowerCase(), x + 220, ry + 6, AbyssUI.TEXT, false);
-            AbyssUI.drawButton(g, font, px + pw - PAD - BTN_SM, ry + 2, BTN_SM, 16, "\u00a7bTP", hov, false);
+            send(MenuActionPacket.playerAction(action, id));
+
+            for (int i = 0; i < players.size(); i++) {
+                var p = players.get(i);
+                if (!p.uuid().equals(id)) continue;
+                var updated = new OpenMainMenuPacket.PlayerState(p.uuid(), p.name(),
+                        col == 0 ? !p.vanished() : p.vanished(),
+                        col == 1 ? !p.godMode() : p.godMode(),
+                        col == 2 ? !p.blinded() : p.blinded());
+                players.set(i, updated);
+                list.setItems(players);
+                list.setSelected(updated);
+            }
         }
-        g.disableScissor();
     }
 
-    // ── Help panel ────────────────────────────────────────────────────────────
+    //-----------------------------------------------------------------------------------
+    //                                     TITLES
+    //-----------------------------------------------------------------------------------
 
-    private void renderHelp(GuiGraphics g, int y, int mx, int my) {
-        int x = px + PAD;
+    /** Saved titles: list → edit / send views, all inside this one tab. */
+    private class TitlesTab implements AbyssTab {
+        private enum Mode { LIST, EDIT, SEND }
 
-        if (helpRequests.isEmpty()) { drawEmpty(g, "No active help requests."); return; }
+        private Mode mode = Mode.LIST;
+        @Nullable private String selectedId;
+        // Editor draft (kept in fields so it survives tab switches and resizes)
+        @Nullable private String editingId;          // null = new title
+        private String draftName = "", draftText = "", draftSub = "";
+        private String draftIn = "10", draftStay = "70", draftOut = "20";
+        // Send view
+        private String sendTag = "", sendTeam = "";
 
-        AbyssUI.scissor(g, px + 1, y, pw - 2, ph - (y - py) - PAD);
-        for (int i = helpScroll; i < helpRequests.size(); i++) {
-            var h = helpRequests.get(i);
-            int ry = y + (i - helpScroll) * ROW_H;
-            if (ry + ROW_H > py + ph - PAD) break;
-            boolean hov = AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H);
-            AbyssUI.drawRow(g, px + 1, ry, pw - 2, hov, i % 2 == 0);
-            g.drawString(font, "\u00a7b" + h.playerName() + "\u00a77: \u00a7f" + shorten(h.reason(), 44),
-                x, ry + 6, AbyssUI.TEXT, false);
-            AbyssUI.drawButton(g, font, px + pw - PAD - BTN_SM, ry + 2, BTN_SM, 16, "\u00a7a[TP]", hov, false);
+        @Override public Component title() { return Component.literal("\u2736 Titles"); }
+
+        @Override
+        public void init(TabContext ctx) {
+            switch (mode) {
+                case LIST -> initList(ctx);
+                case EDIT -> initEditor(ctx);
+                case SEND -> initSend(ctx);
+            }
         }
-        g.disableScissor();
+
+        // ── List ──
+        private void initList(TabContext ctx) {
+            Font font = ctx.font();
+            var list = ctx.add(new AbyssScrollList<OpenMainMenuPacket.TitleEntry>(
+                    ctx.x, ctx.y, ctx.width, listHeight(ctx, 0), ROW_H,
+                    (g, t, x, y, w, h, hover, sel) -> {
+                        g.drawString(font, t.name(), x, y + 3, sel ? AbyssTheme.TEXT_BRIGHT : AbyssTheme.TEXT, false);
+                        g.drawString(font, AbyssDraw.trimmed(font, Component.literal(t.titleText()), w - 120),
+                                x + 110, y + 3, AbyssTheme.TEXT_DIM, false);
+                    }));
+            list.emptyText(Component.literal("No titles yet. Click + New."));
+            list.setItems(titles);
+            list.setSelected(selected());
+            list.onSelect(t -> { selectedId = t.id(); ctx.rebuild(); });
+
+            var t = selected();
+            var row = bottomRow(ctx);
+            row.add(ctx.add(new AbyssButton(0, 0, 60, Component.literal("+ New"), b -> openEditor(ctx, null))));
+            AbyssButton edit = row.add(ctx.add(new AbyssButton(0, 0, 60, Component.literal("Edit"), b -> openEditor(ctx, t))));
+            AbyssButton sendBtn = row.add(ctx.add(new AbyssButton(0, 0, 60, Component.literal("Send..."), b -> { mode = Mode.SEND; ctx.rebuild(); })));
+            AbyssButton delete = row.add(ctx.add(new AbyssButton(0, 0, 60, Component.literal("Delete"), AbyssButton.Style.DANGER,
+                    b -> ctx.open(AbyssDialog.confirmDanger(ctx.screen(), Component.literal("Delete title?"),
+                            Component.literal("\"" + t.name() + "\" will be deleted for everyone."), () -> {
+                                send(MenuActionPacket.stringAction(MenuActionPacket.Action.DELETE_TITLE, t.id(), ""));
+                                titles.remove(t);
+                                selectedId = null;
+                            })))));
+            edit.active = sendBtn.active = delete.active = (t != null);
+        }
+
+        private void openEditor(TabContext ctx, @Nullable OpenMainMenuPacket.TitleEntry t) {
+            editingId = t == null ? null : t.id();
+            draftName = t == null ? "" : t.name();
+            draftText = t == null ? "" : t.titleText();
+            draftSub  = t == null ? "" : t.subtitleText();
+            draftIn   = t == null ? "10" : String.valueOf(t.fadeIn());
+            draftStay = t == null ? "70" : String.valueOf(t.stay());
+            draftOut  = t == null ? "20" : String.valueOf(t.fadeOut());
+            mode = Mode.EDIT;
+            ctx.rebuild();
+        }
+
+        // ── Editor ──
+        private AbyssButton saveButton;
+
+        private void initEditor(TabContext ctx) {
+            int w = ctx.width;
+            int third = (w - 8) / 3;
+            // Labels are drawn in render(); every field sits 10px under its label
+            field(ctx, ctx.x, ctx.y + 22, w, "Name", draftName, v -> draftName = v);
+            field(ctx, ctx.x, ctx.y + 54, w, "Title text  (&a green, &c red, &e yellow...)", draftText, v -> draftText = v);
+            field(ctx, ctx.x, ctx.y + 86, w, "Subtitle (optional)", draftSub, v -> draftSub = v);
+            numberField(ctx, ctx.x, ctx.y + 118, third, draftIn, v -> draftIn = v);
+            numberField(ctx, ctx.x + third + 4, ctx.y + 118, third, draftStay, v -> draftStay = v);
+            numberField(ctx, ctx.x + 2 * (third + 4), ctx.y + 118, third, draftOut, v -> draftOut = v);
+
+            var row = bottomRow(ctx);
+            saveButton = row.add(ctx.add(new AbyssButton(0, 0, 70, Component.literal("Save"), b -> save())));
+            row.add(ctx.add(new AbyssButton(0, 0, 70, Component.literal("Cancel"), b -> { mode = Mode.LIST; ctx.rebuild(); })));
+            updateSave();
+        }
+
+        private void field(TabContext ctx, int x, int y, int w, String hint, String value, java.util.function.Consumer<String> onChange) {
+            var f = ctx.add(new AbyssTextField(x, y, w, Component.literal(hint)));
+            f.setMaxLength(256);
+            f.setValue(value);
+            f.setResponder(v -> { onChange.accept(v); updateSave(); });
+        }
+
+        private void numberField(TabContext ctx, int x, int y, int w, String value, java.util.function.Consumer<String> onChange) {
+            var f = ctx.add(new AbyssTextField(x, y, w, Component.literal("ticks")));
+            f.setMaxLength(5);
+            f.setFilter(s -> s.chars().allMatch(Character::isDigit));   // digits only
+            f.setValue(value);
+            f.setResponder(onChange);
+        }
+
+        /** Save only makes sense with a name and a title text. */
+        private void updateSave() {
+            if (saveButton != null) saveButton.active = !draftName.isBlank() && !draftText.isBlank();
+        }
+
+        private void save() {
+            PacketDistributor.sendToServer(new SaveTitlePacket(
+                    editingId == null ? "" : editingId, draftName.trim(), draftText.trim(), draftSub.trim(),
+                    parse(draftIn, 10), parse(draftStay, 70), parse(draftOut, 20)));
+            // The server assigns ids to new titles, so our list can't show the result yet:
+            // close like before — reopen the menu to see the saved title.
+            onClose();
+        }
+
+        // ── Send ──
+        private void initSend(TabContext ctx) {
+            var t = selected();
+            if (t == null) { mode = Mode.LIST; initList(ctx); return; }
+
+            var col = AbyssLayout.column(ctx.x, ctx.y + 14, 6);
+            col.add(ctx.add(new AbyssButton(0, 0, ctx.width, Component.literal("Send to ALL players"), b -> {
+                send(MenuActionPacket.stringAction(MenuActionPacket.Action.SEND_TITLE_ALL, t.id(), ""));
+                back(ctx);
+            })));
+
+            int fieldW = ctx.width - 90 - 4;
+            var tag = ctx.add(new AbyssTextField(ctx.x, col.y(), fieldW, Component.literal("Scoreboard tag...")));
+            tag.setValue(sendTag);
+            tag.setResponder(v -> sendTag = v);
+            ctx.add(new AbyssButton(ctx.x + fieldW + 4, col.y(), 90, Component.literal("Send by tag"), b -> {
+                send(MenuActionPacket.stringAction(MenuActionPacket.Action.SEND_TITLE_TAG, t.id(), sendTag.trim()));
+                back(ctx);
+            }));
+            col.space(AbyssTextField.HEIGHT + 6);
+
+            var team = ctx.add(new AbyssTextField(ctx.x, col.y(), fieldW, Component.literal("Team name...")));
+            team.setValue(sendTeam);
+            team.setResponder(v -> sendTeam = v);
+            ctx.add(new AbyssButton(ctx.x + fieldW + 4, col.y(), 90, Component.literal("Send by team"), b -> {
+                send(MenuActionPacket.stringAction(MenuActionPacket.Action.SEND_TITLE_TEAM, t.id(), sendTeam.trim()));
+                back(ctx);
+            }));
+
+            bottomRow(ctx).add(ctx.add(new AbyssButton(0, 0, 70, Component.literal("Back"), b -> back(ctx))));
+        }
+
+        private void back(TabContext ctx) {
+            mode = Mode.LIST;
+            ctx.rebuild();
+        }
+
+        @Override
+        public void render(GuiGraphics g, TabContext ctx, int mouseX, int mouseY, float partialTick) {
+            Font font = ctx.font();
+            if (mode == Mode.EDIT) {
+                AbyssDraw.sectionTitle(g, font, Component.literal(editingId == null ? "NEW TITLE" : "EDIT TITLE"), ctx.x, ctx.y);
+                label(g, font, "Name", ctx.x, ctx.y + 13);
+                label(g, font, "Title text", ctx.x, ctx.y + 45);
+                label(g, font, "Subtitle", ctx.x, ctx.y + 77);
+                int third = (ctx.width - 8) / 3;
+                label(g, font, "Fade in", ctx.x, ctx.y + 109);
+                label(g, font, "Stay", ctx.x + third + 4, ctx.y + 109);
+                label(g, font, "Fade out", ctx.x + 2 * (third + 4), ctx.y + 109);
+            } else if (mode == Mode.SEND) {
+                var t = selected();
+                if (t != null) AbyssDraw.sectionTitle(g, font, Component.literal("SEND: " + t.name()), ctx.x, ctx.y);
+            }
+        }
+
+        @Nullable
+        private OpenMainMenuPacket.TitleEntry selected() {
+            return selectedId == null ? null : titles.stream().filter(t -> t.id().equals(selectedId)).findFirst().orElse(null);
+        }
     }
 
-    // ── Bulk panel ────────────────────────────────────────────────────────────
+    //-----------------------------------------------------------------------------------
+    //                                     VANISH
+    //-----------------------------------------------------------------------------------
 
-    private void renderBulk(GuiGraphics g, int y, int mx, int my) {
-        int x = px + PAD;
+    private class VanishTab implements AbyssTab {
+        @Nullable private UUID selected;
 
-        // + Create Bulk button — same style/position as Create Dim
-        int cbbw = 110, cbbh = AbyssUI.BTN_H;
-        int cbbx = px + pw - PAD - cbbw;
-        int cbby = py + AbyssUI.HEADER_H - cbbh - 2;
-        AbyssUI.drawButton(g, font, cbbx, cbby, cbbw, cbbh,
-            "\u00a7b+ Create Bulk", AbyssUI.isHovered(mx, my, cbbx, cbby, cbbw, cbbh), false);
+        @Override public Component title() { return Component.literal("\u25CE Vanish"); }
 
-        g.drawString(font, "\u00a77Name",        x,       y, AbyssUI.TEXT_MUTED, false);
-        g.drawString(font, "\u00a77Bound Slot",  x + 150, y, AbyssUI.TEXT_MUTED, false);
-        g.drawString(font, "\u00a77Quick Bind",  x + 220, y, AbyssUI.TEXT_MUTED, false);
-        y += 12;
-        g.fill(px + PAD, y, px + pw - PAD, y + 1, AbyssUI.BORDER);
-        y += 4;
+        @Override
+        public void init(TabContext ctx) {
+            ctx.add(new AbyssToggle(ctx.x, ctx.y, Component.literal("Team visibility"), teamVisibility, on -> {
+                send(MenuActionPacket.of(MenuActionPacket.Action.TOGGLE_TEAM_VISIBILITY));
+                teamVisibility = on;
+            }));
 
-        if (bulkCommands.isEmpty()) { drawEmpty(g, "No bulk commands defined."); return; }
+            var vanished = players.stream().filter(OpenMainMenuPacket.PlayerState::vanished).toList();
+            Font font = ctx.font();
+            int listY = ctx.y + 38;
+            var list = ctx.add(new AbyssScrollList<OpenMainMenuPacket.PlayerState>(
+                    ctx.x, listY, ctx.width, ctx.y + listHeight(ctx, 0) - listY, ROW_H,
+                    (g, p, x, y, w, h, hover, sel) ->
+                            g.drawString(font, p.name(), x, y + 3, sel ? AbyssTheme.TEXT_BRIGHT : AbyssTheme.TEXT, false)));
+            list.emptyText(Component.literal("No players are vanished."));
+            list.setItems(vanished);
+            var current = vanished.stream().filter(p -> p.uuid().equals(selected)).findFirst().orElse(null);
+            list.setSelected(current);
+            list.onSelect(p -> { selected = p.uuid(); ctx.rebuild(); });
 
-        AbyssUI.scissor(g, px + 1, y, pw - 2, ph - (y - py) - PAD);
-        for (int i = bulkScroll; i < bulkCommands.size(); i++) {
-            var b = bulkCommands.get(i);
-            int ry = y + (i - bulkScroll) * ROW_H;
-            if (ry + ROW_H > py + ph - PAD) break;
-            boolean hov = AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H);
-            AbyssUI.drawRow(g, px + 1, ry, pw - 2, hov, i % 2 == 0);
-            g.drawString(font, b.name(), x, ry + 6, AbyssUI.TEXT, false);
+            var row = bottomRow(ctx);
+            AbyssButton show = row.add(ctx.add(new AbyssButton(0, 0, 60, Component.literal("Show"), b ->
+                    send(new MenuActionPacket(MenuActionPacket.Action.VANISH_SHOW_TO, current.uuid(), current.uuid().toString(), "", 0)))));
+            AbyssButton hide = row.add(ctx.add(new AbyssButton(0, 0, 60, Component.literal("Hide"), b ->
+                    send(new MenuActionPacket(MenuActionPacket.Action.VANISH_HIDE_FROM, current.uuid(), current.uuid().toString(), "", 0)))));
+            AbyssButton clear = row.add(ctx.add(new AbyssButton(0, 0, 60, Component.literal("Clear"), b ->
+                    send(new MenuActionPacket(MenuActionPacket.Action.VANISH_CLEAR, null, current.uuid().toString(), "", 0)))));
+            show.active = hide.active = clear.active = (current != null);
+        }
 
-            String bound = bindSlots.entrySet().stream()
-                .filter(e -> e.getValue().equals(b.name()))
-                .map(e -> "\u00a7b" + e.getKey())
-                .findFirst().orElse("\u00a70-");
-            g.drawString(font, bound, x + 150, ry + 6, AbyssUI.TEXT, false);
+        @Override
+        public void render(GuiGraphics g, TabContext ctx, int mouseX, int mouseY, float partialTick) {
+            g.fill(ctx.x, ctx.y + 24, ctx.x + ctx.width, ctx.y + 25, AbyssTheme.DIVIDER);
+            AbyssDraw.sectionTitle(g, ctx.font(), Component.literal("VANISHED PLAYERS"), ctx.x, ctx.y + 28);
+        }
+    }
 
-            // Quick bind slots 1-9
-            int slotX = x + 220;
+    //-----------------------------------------------------------------------------------
+    //                                     REGIONS
+    //-----------------------------------------------------------------------------------
+
+    private class RegionsTab implements AbyssTab {
+        @Override public Component title() { return Component.literal("\u25A6 Regions"); }
+
+        @Override
+        public void init(TabContext ctx) {
+            int w = 180;
+            ctx.add(new AbyssButton(AbyssLayout.center(ctx.x, ctx.width, w), ctx.y + ctx.height / 2 - 10, w,
+                    Component.literal("\u25A6  Open Region Manager"), b -> {
+                        // The server answers with the region list; remember where to come back to
+                        RegionManagerScreen.pendingPreviousScreen = AbyssCoreMenuScreen.this;
+                        PacketDistributor.sendToServer(new RequestRegionScreenPacket());
+                    }));
+        }
+
+        @Override
+        public void render(GuiGraphics g, TabContext ctx, int mouseX, int mouseY, float partialTick) {
+            g.drawCenteredString(ctx.font(), Component.literal("Protected areas: build, entry, PvP and spawning rules."),
+                    ctx.x + ctx.width / 2, ctx.y + ctx.height / 2 - 26, AbyssTheme.TEXT_DIM);
+        }
+    }
+
+    //-----------------------------------------------------------------------------------
+    //                                   DIMENSIONS
+    //-----------------------------------------------------------------------------------
+
+    private class DimensionsTab implements AbyssTab {
+        @Nullable private String selected;
+
+        @Override public Component title() { return Component.literal("\u2318 Dimensions"); }
+
+        @Override
+        public void init(TabContext ctx) {
+            Font font = ctx.font();
+            var list = ctx.add(new AbyssScrollList<OpenMainMenuPacket.DimEntry>(
+                    ctx.x, ctx.y, ctx.width, listHeight(ctx, 0), ROW_H,
+                    (g, d, x, y, w, h, hover, sel) -> {
+                        g.drawString(font, d.name(), x, y + 3, sel ? AbyssTheme.TEXT_BRIGHT : AbyssTheme.TEXT, false);
+                        ChatFormatting color = switch (d.state()) {
+                            case "LOADED" -> ChatFormatting.GREEN;
+                            case "UNLOADED" -> ChatFormatting.RED;
+                            default -> ChatFormatting.YELLOW;
+                        };
+                        rightText(g, font, Component.literal(d.state().toLowerCase()).withStyle(color), x, y, w, AbyssTheme.TEXT);
+                    }));
+            list.emptyText(Component.literal("No dimensions registered."));
+            list.setItems(dims);
+            var current = dims.stream().filter(d -> d.name().equals(selected)).findFirst().orElse(null);
+            list.setSelected(current);
+            list.onSelect(d -> { selected = d.name(); ctx.rebuild(); });
+
+            var row = bottomRow(ctx);
+            row.add(ctx.add(new AbyssButton(0, 0, 80, Component.literal("+ Create"), b ->
+                    ctx.open(new DimenCreateScreen(AbyssCoreMenuScreen.this)))));
+            AbyssButton tp = row.add(ctx.add(new AbyssButton(0, 0, 80, Component.literal("Teleport"), b ->
+                    send(MenuActionPacket.stringAction(MenuActionPacket.Action.DIMEN_TP, current.name(), "")))));
+            tp.active = current != null;
+        }
+    }
+
+    //-----------------------------------------------------------------------------------
+    //                                  HELP REQUESTS
+    //-----------------------------------------------------------------------------------
+
+    private class HelpTab implements AbyssTab {
+        @Nullable private UUID selected;
+
+        @Override public Component title() { return Component.literal("\u2709 Help"); }
+
+        @Override
+        public void init(TabContext ctx) {
+            Font font = ctx.font();
+            var list = ctx.add(new AbyssScrollList<OpenMainMenuPacket.HelpEntry>(
+                    ctx.x, ctx.y, ctx.width, listHeight(ctx, 0), ROW_H,
+                    (g, h, x, y, w, rh, hover, sel) -> {
+                        int nameW = font.width(h.playerName() + ": ");
+                        g.drawString(font, h.playerName() + ":", x, y + 3, AbyssTheme.ACCENT, false);
+                        g.drawString(font, AbyssDraw.trimmed(font, Component.literal(h.reason()), w - nameW - 4),
+                                x + nameW, y + 3, sel ? AbyssTheme.TEXT_BRIGHT : AbyssTheme.TEXT, false);
+                    }));
+            list.emptyText(Component.literal("No active help requests."));
+            list.setItems(helpRequests);
+            var current = helpRequests.stream().filter(h -> h.playerUUID().equals(selected)).findFirst().orElse(null);
+            list.setSelected(current);
+            list.onSelect(h -> { selected = h.playerUUID(); ctx.rebuild(); });
+
+            AbyssButton accept = bottomRow(ctx).add(ctx.add(new AbyssButton(0, 0, 120,
+                    Component.literal("Accept & teleport"), b -> {
+                        send(MenuActionPacket.playerAction(MenuActionPacket.Action.HELP_ACCEPT, current.playerUUID()));
+                        helpRequests.remove(current);
+                        selected = null;
+                        ctx.rebuild();
+                    })));
+            accept.active = current != null;
+        }
+    }
+
+    //-----------------------------------------------------------------------------------
+    //                                  BULK COMMANDS
+    //-----------------------------------------------------------------------------------
+
+    private class BulkTab implements AbyssTab {
+        private static final int SLOT_W = 20;
+        @Nullable private String selected;
+
+        @Override public Component title() { return Component.literal("\u2630 Bulk"); }
+
+        @Override
+        public void init(TabContext ctx) {
+            Font font = ctx.font();
+            // Two button rows at the bottom: slots, then actions → the list gets 26px less
+            var list = ctx.add(new AbyssScrollList<OpenMainMenuPacket.BulkEntry>(
+                    ctx.x, ctx.y, ctx.width, listHeight(ctx, AbyssButton.HEIGHT + 16), ROW_H,
+                    (g, b, x, y, w, h, hover, sel) -> {
+                        g.drawString(font, b.name(), x, y + 3, sel ? AbyssTheme.TEXT_BRIGHT : AbyssTheme.TEXT, false);
+                        Integer slot = slotOf(b.name());
+                        rightText(g, font, Component.literal(slot == null ? "-" : "slot " + slot), x, y, w,
+                                slot == null ? AbyssTheme.TEXT_OFF : AbyssTheme.ACCENT);
+                    }));
+            list.emptyText(Component.literal("No bulk commands. Click + Create."));
+            list.setItems(bulkCommands);
+            var current = bulkCommands.stream().filter(b -> b.name().equals(selected)).findFirst().orElse(null);
+            list.setSelected(current);
+            list.onSelect(b -> { selected = b.name(); ctx.rebuild(); });
+
+            // Quick-bind slots 1–9 for the selected command
+            int slotsY = ctx.y + ctx.height - AbyssButton.HEIGHT * 2 - 6;
+            var slots = AbyssLayout.row(ctx.x + 60, slotsY, 2);
             for (int slot = 1; slot <= 9; slot++) {
-                boolean isBound = b.name().equals(bindSlots.get(slot));
-                int bg  = isBound ? 0xFF0D2A3A : AbyssUI.BTN;
-                int bdr = isBound ? AbyssUI.BORDER_ACTIVE : AbyssUI.BORDER;
-                g.fill(slotX, ry + 2, slotX + 12, ry + 18, bg);
-                AbyssUI.drawBorder(g, slotX, ry + 2, 12, 16, bdr);
-                g.drawCenteredString(font, isBound ? "\u00a7b" + slot : "\u00a70" + slot,
-                    slotX + 6, ry + 6, AbyssUI.TEXT);
-                slotX += 14;
+                int s = slot;
+                String boundTo = bindSlots.get(s);
+                // aqua = bound to THIS command, grey = bound to another one, white = free
+                ChatFormatting color = current != null && current.name().equals(boundTo) ? ChatFormatting.AQUA
+                        : boundTo != null ? ChatFormatting.DARK_GRAY : ChatFormatting.WHITE;
+                AbyssButton btn = slots.add(ctx.add(new AbyssButton(0, 0, SLOT_W,
+                        Component.literal(String.valueOf(s)).withStyle(color), b -> toggleBind(ctx, current.name(), s))));
+                btn.active = current != null;
+                if (boundTo != null) btn.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Bound: " + boundTo)));
             }
 
-            // Run button
-            AbyssUI.drawButton(g, font, slotX + 4, ry + 2, BTN_SM, 16, "\u00a7aRun", hov, false);
+            var row = bottomRow(ctx);
+            row.add(ctx.add(new AbyssButton(0, 0, 80, Component.literal("+ Create"), b ->
+                    ctx.open(new BulkCommandScreen(AbyssCoreMenuScreen.this)))));
+            AbyssButton run = row.add(ctx.add(new AbyssButton(0, 0, 80, Component.literal("Run"), b ->
+                    send(MenuActionPacket.stringAction(MenuActionPacket.Action.BULK_RUN, current.name(), "")))));
+            run.active = current != null;
         }
-        g.disableScissor();
-    }
 
-    // ── Mouse ─────────────────────────────────────────────────────────────────
-
-    @Override
-    public boolean mouseClicked(double mx, double my, int btn) {
-        int ox = PAD * 2, oy = PAD * 2, oh = height - PAD * 4;
-
-        // Sidebar category click
-        int catY = oy + 32 + AbyssUI.PAD / 2;
-        for (int i = 0; i < CATS.length; i++) {
-            if (AbyssUI.isHovered(mx, my, ox + 1, catY, SIDE_W - 2, ROW_H)) {
-                if (selectedCat != i) { selectedCat = i; editingTitle = runningTitle = -1; init(); }
-                return true;
+        /** Clicking the command's own slot unbinds it; any other slot binds it there. */
+        private void toggleBind(TabContext ctx, String name, int slot) {
+            if (name.equals(bindSlots.get(slot))) {
+                send(MenuActionPacket.intAction(MenuActionPacket.Action.BULK_UNBIND, "", slot));
+                bindSlots.remove(slot);
+            } else {
+                send(MenuActionPacket.intAction(MenuActionPacket.Action.BULK_BIND, name, slot));
+                bindSlots.put(slot, name);
             }
-            catY += ROW_H + 2;
+            ctx.rebuild();   // recolor the slot buttons
         }
 
-        int contentY = py + AbyssUI.HEADER_H + AbyssUI.PAD;
-
-        switch (selectedCat) {
-            case 0 -> handlePlayerClick(mx, my, contentY);
-            case 1 -> handleTitleClick(mx, my, contentY);
-            case 2 -> handleVanishClick(mx, my, contentY);
-            case 3 -> handleRegionClick(mx, my);
-            case 4 -> handleDimClick(mx, my, contentY);
-            case 5 -> handleHelpClick(mx, my, contentY);
-            case 6 -> handleBulkClick(mx, my, contentY);
+        @Nullable
+        private Integer slotOf(String name) {
+            return bindSlots.entrySet().stream().filter(e -> e.getValue().equals(name))
+                    .map(Map.Entry::getKey).findFirst().orElse(null);
         }
 
-        return super.mouseClicked(mx, my, btn);
-    }
-
-    private void handlePlayerClick(double mx, double my, int y) {
-        int x = px + PAD;
-        y += 16; // skip header row + divider
-        for (int i = playerScroll; i < players.size(); i++) {
-            int ry = y + (i - playerScroll) * ROW_H;
-            if (!AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H)) continue;
-            // col 0=vanish, 1=god, 2=blind (staff removed)
-            if (AbyssUI.isHovered(mx, my, x + 136, ry + 2, 36, 16)) { togglePlayer(i, 0); return; }
-            if (AbyssUI.isHovered(mx, my, x + 178, ry + 2, 36, 16)) { togglePlayer(i, 1); return; }
-            if (AbyssUI.isHovered(mx, my, x + 216, ry + 2, 36, 16)) { togglePlayer(i, 2); return; }
+        @Override
+        public void render(GuiGraphics g, TabContext ctx, int mouseX, int mouseY, float partialTick) {
+            int slotsY = ctx.y + ctx.height - AbyssButton.HEIGHT * 2 - 6;
+            g.drawString(ctx.font(), "Quick bind", ctx.x, slotsY + 6, AbyssTheme.TEXT_DIM, false);
         }
     }
 
-    private void handleTitleClick(double mx, double my, int y) {
-        // + New Title button click (list view only)
-        if (editingTitle == -1 && runningTitle == -1) {
-            int ntbw = 100, ntbh = AbyssUI.BTN_H;
-            int ntbx = px + pw - PAD - ntbw;
-            int ntby = py + AbyssUI.HEADER_H - ntbh - 2;
-            if (AbyssUI.isHovered(mx, my, ntbx, ntby, ntbw, ntbh)) {
-                editingTitle = -2; init(); return;
-            }
-        }
-        // Save / Cancel in edit view
-        if (editingTitle != -1 && runningTitle == -1) {
-            int fw = pw - PAD * 2;
-            int third = (fw - 8) / 3;
-            int fy = py + AbyssUI.HEADER_H + PAD * 3 + 30 * 4 + PAD;
-            int x = px + PAD;
-            if (AbyssUI.isHovered(mx, my, x,      fy, 70, AbyssUI.BTN_H)) { onSaveTitle(); return; }
-            if (AbyssUI.isHovered(mx, my, x + 74, fy, 70, AbyssUI.BTN_H)) { editingTitle = -1; init(); return; }
-        }
-        if (editingTitle != -1 || runningTitle != -1) return;
-        y += ROW_H + AbyssUI.PAD;
-        for (int i = titleScroll; i < titles.size(); i++) {
-            int ry = y + (i - titleScroll) * ROW_H;
-            if (!AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H)) continue;
-            int bx = px + pw - AbyssUI.PAD - BTN_SM * 2 - 4;
-            if (AbyssUI.isHovered(mx, my, bx,          ry+2, BTN_SM, 16)) { runningTitle = i; init(); return; }
-            if (AbyssUI.isHovered(mx, my, bx+BTN_SM+4, ry+2, BTN_SM, 16)) { editingTitle = i; init(); return; }
-        }
+    //-----------------------------------------------------------------------------------
+
+    private static void label(GuiGraphics g, Font font, String text, int x, int y) {
+        g.drawString(font, text, x, y, AbyssTheme.TEXT_DIM, false);
     }
 
-    private void handleVanishClick(double mx, double my, int y) {
-        // Team visibility toggle
-        if (AbyssUI.isHovered(mx, my, px + pw - AbyssUI.PAD - 50, y + 2, 50, 16)) {
-            PacketDistributor.sendToServer(MenuActionPacket.of(MenuActionPacket.Action.TOGGLE_TEAM_VISIBILITY));
-            teamVisibility = !teamVisibility;
-            return;
-        }
-        y += ROW_H + AbyssUI.PAD * 2 + 14;
-        var vanished = players.stream().filter(OpenMainMenuPacket.PlayerState::vanished).toList();
-        for (int i = 0; i < vanished.size(); i++) {
-            int ry = y + i * ROW_H;
-            if (!AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H)) continue;
-            var p = vanished.get(i);
-            int bx = px + pw - AbyssUI.PAD - 46 * 3 - 8;
-            if (AbyssUI.isHovered(mx, my, bx,    ry+2, 44, 16)) { PacketDistributor.sendToServer(new MenuActionPacket(MenuActionPacket.Action.VANISH_SHOW_TO,   p.uuid(), p.uuid().toString(), "", 0)); return; }
-            if (AbyssUI.isHovered(mx, my, bx+48, ry+2, 44, 16)) { PacketDistributor.sendToServer(new MenuActionPacket(MenuActionPacket.Action.VANISH_HIDE_FROM, p.uuid(), p.uuid().toString(), "", 0)); return; }
-            if (AbyssUI.isHovered(mx, my, bx+96, ry+2, 44, 16)) { PacketDistributor.sendToServer(new MenuActionPacket(MenuActionPacket.Action.VANISH_CLEAR,     null,     p.uuid().toString(), "", 0)); return; }
-        }
+    private static int parse(String value, int fallback) {
+        try { return Integer.parseInt(value.trim()); } catch (NumberFormatException e) { return fallback; }
     }
-
-    private void handleRegionClick(double mx, double my) {
-        int bw = 160, bh = 20;
-        int bx = px + pw / 2 - bw / 2;
-        int by = py + ph / 2 - bh / 2;
-        if (AbyssUI.isHovered(mx, my, bx, by, bw, bh)) {
-            RegionManagerScreen.pendingPreviousScreen = this;
-            PacketDistributor.sendToServer(new RequestRegionScreenPacket());
-        }
-    }
-
-    private void handleDimClick(double mx, double my, int y) {
-        int cbw = 100, cbh = AbyssUI.BTN_H;
-        int cbx = px + pw - AbyssUI.PAD - cbw;
-        int cby = py + AbyssUI.HEADER_H - cbh - 2;
-        if (AbyssUI.isHovered(mx, my, cbx, cby, cbw, cbh)) {
-            Minecraft.getInstance().setScreen(new DimenCreateScreen(this));
-            return;
-        }
-        y += 16;
-        for (int i = dimScroll; i < dims.size(); i++) {
-            int ry = y + (i - dimScroll) * ROW_H;
-            if (!AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H)) continue;
-            if (AbyssUI.isHovered(mx, my, px + pw - AbyssUI.PAD - BTN_SM, ry+2, BTN_SM, 16)) {
-                PacketDistributor.sendToServer(MenuActionPacket.stringAction(MenuActionPacket.Action.DIMEN_TP, dims.get(i).name(), ""));
-            }
-        }
-    }
-
-    private void handleHelpClick(double mx, double my, int y) {
-        for (int i = helpScroll; i < helpRequests.size(); i++) {
-            int ry = y + (i - helpScroll) * ROW_H;
-            if (!AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H)) continue;
-            if (AbyssUI.isHovered(mx, my, px + pw - AbyssUI.PAD - BTN_SM, ry+2, BTN_SM, 16)) {
-                PacketDistributor.sendToServer(MenuActionPacket.playerAction(MenuActionPacket.Action.HELP_ACCEPT, helpRequests.get(i).playerUUID()));
-                helpRequests.remove(i);
-                return;
-            }
-        }
-    }
-
-    private void handleBulkClick(double mx, double my, int y) {
-        int x = px + AbyssUI.PAD;
-        // + Create Bulk button click
-        int cbbw = 110, cbbh = AbyssUI.BTN_H;
-        int cbbx = px + pw - PAD - cbbw;
-        int cbby = py + AbyssUI.HEADER_H - cbbh - 2;
-        if (AbyssUI.isHovered(mx, my, cbbx, cbby, cbbw, cbbh)) {
-            Minecraft.getInstance().setScreen(new BulkCommandScreen(this));
-            return;
-        }
-        y += 16;
-        for (int i = bulkScroll; i < bulkCommands.size(); i++) {
-            var b = bulkCommands.get(i);
-            int ry = y + (i - bulkScroll) * ROW_H;
-            if (!AbyssUI.isHovered(mx, my, px + 1, ry, pw - 2, ROW_H)) continue;
-            // Slots
-            int slotX = x + 220;
-            for (int slot = 1; slot <= 9; slot++) {
-                if (AbyssUI.isHovered(mx, my, slotX, ry + 2, 12, 16)) {
-                    boolean isBound = b.name().equals(bindSlots.get(slot));
-                    if (isBound) {
-                        PacketDistributor.sendToServer(MenuActionPacket.intAction(MenuActionPacket.Action.BULK_UNBIND, "", slot));
-                        bindSlots.remove(slot);
-                    } else {
-                        PacketDistributor.sendToServer(MenuActionPacket.intAction(MenuActionPacket.Action.BULK_BIND, b.name(), slot));
-                        bindSlots.put(slot, b.name());
-                    }
-                    return;
-                }
-                slotX += 14;
-            }
-            // Run
-            if (AbyssUI.isHovered(mx, my, slotX + 4, ry + 2, BTN_SM, 16)) {
-                PacketDistributor.sendToServer(MenuActionPacket.stringAction(MenuActionPacket.Action.BULK_RUN, b.name(), ""));
-                return;
-            }
-        }
-    }
-
-    @Override
-    public boolean mouseScrolled(double mx, double my, double dx, double dy) {
-        int d = -(int) dy;
-        switch (selectedCat) {
-            case 0 -> playerScroll = clamp(playerScroll + d, players.size());
-            case 1 -> titleScroll  = clamp(titleScroll  + d, titles.size());
-            case 4 -> dimScroll    = clamp(dimScroll    + d, dims.size());
-            case 5 -> helpScroll   = clamp(helpScroll   + d, helpRequests.size());
-            case 6 -> bulkScroll   = clamp(bulkScroll   + d, bulkCommands.size());
-        }
-        return true;
-    }
-
-    // ── Actions ───────────────────────────────────────────────────────────────
-
-    private void togglePlayer(int idx, int col) {
-        var p = players.get(idx);
-        // col 0=vanish, 1=god, 2=blind
-        MenuActionPacket.Action action = switch (col) {
-            case 0 -> MenuActionPacket.Action.TOGGLE_VANISH;
-            case 1 -> MenuActionPacket.Action.TOGGLE_GOD;
-            default -> MenuActionPacket.Action.TOGGLE_BLIND;
-        };
-        PacketDistributor.sendToServer(MenuActionPacket.playerAction(action, p.uuid()));
-        players.set(idx, new OpenMainMenuPacket.PlayerState(
-            p.uuid(), p.name(),
-            col == 0 ? !p.vanished() : p.vanished(),
-            col == 1 ? !p.godMode()  : p.godMode(),
-            col == 2 ? !p.blinded()  : p.blinded()
-        ));
-    }
-
-    private void onSaveTitle() {
-        if (titleNameBox == null || titleTextBox == null) return;
-        String name = titleNameBox.getValue().trim();
-        String text = titleTextBox.getValue().trim();
-        if (name.isEmpty() || text.isEmpty()) return;
-        String id = (editingTitle >= 0 && editingTitle < titles.size()) ? titles.get(editingTitle).id() : "";
-        PacketDistributor.sendToServer(new SaveTitlePacket(id, name, text,
-            titleSubBox != null ? titleSubBox.getValue().trim() : "",
-            parseInt(titleFadeInBox, 10), parseInt(titleStayBox, 70), parseInt(titleFadeOutBox, 20)));
-        editingTitle = -1;
-        onClose();
-    }
-
-    private void sendTitle(MenuActionPacket.Action action, String id, String arg) {
-        PacketDistributor.sendToServer(MenuActionPacket.stringAction(action, id, arg));
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private void drawTitleFieldBg(GuiGraphics g, int x, int y, int w, String label) {
-        g.drawString(font, "\u00a77" + label, x, y - 9, AbyssUI.TEXT_MUTED, false);
-        g.fill(x - 2, y - 1, x + w + 2, y + 17, AbyssUI.PANEL_LIGHT);
-        AbyssUI.drawBorder(g, x - 2, y - 1, w + 4, 18, AbyssUI.BORDER);
-    }
-
-    private void drawEmpty(GuiGraphics g, String msg) {
-        g.drawCenteredString(font, "\u00a77" + msg, px + pw / 2, py + ph / 2, AbyssUI.TEXT_MUTED);
-    }
-
-    private int clamp(int val, int size) {
-        return Math.max(0, Math.min(val, Math.max(0, size - 12)));
-    }
-
-    private int parseInt(EditBox box, int def) {
-        if (box == null) return def;
-        try { return Integer.parseInt(box.getValue().trim()); } catch (Exception e) { return def; }
-    }
-
-    private String shorten(String s, int max) {
-        return s != null && s.length() > max ? s.substring(0, max) + "..." : s;
-    }
-
-    @Override public boolean isPauseScreen() { return false; }
-    @Override public void renderBackground(GuiGraphics g, int mx, int my, float delta) {}
 }

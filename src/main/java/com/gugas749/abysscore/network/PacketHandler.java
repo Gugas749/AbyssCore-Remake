@@ -3,6 +3,8 @@ package com.gugas749.abysscore.network;
 import com.gugas749.abysscore.api.attachment.SyncAttachmentClientHandler;
 import com.gugas749.abysscore.api.attachment.SyncAttachmentPacket;
 import com.gugas749.abysscore.api.network.AbyssPacketHandler;
+import com.gugas749.abysscore.api.permission.AbyssClientPermission;
+import com.gugas749.abysscore.api.permission.PermissionSyncPacket;
 import com.gugas749.abysscore.client.ACVanishHudHandler;
 import com.gugas749.abysscore.client.ui.AbyssCoreMenuScreen;
 import com.gugas749.abysscore.client.ui.screens.*;
@@ -29,7 +31,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 public class PacketHandler {
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar("2");
+        PayloadRegistrar registrar = event.registrar("3");   // 3: permission sync for the GUI API
 
         // ── S2C ──────────────────────────────────────────────────────────────
         
@@ -98,5 +100,10 @@ public class PacketHandler {
         AbyssPacketHandler.registerC2S(registrar,
                 RequestRegionScreenPacket.TYPE, RequestRegionScreenPacket.CODEC,
                 RegionScreenPacketHandlers::handleRequest);
+
+        // ── GUI API ──
+        AbyssPacketHandler.registerS2C(registrar,
+                PermissionSyncPacket.TYPE, PermissionSyncPacket.CODEC,
+                () -> AbyssClientPermission::handle);
     }
 }
