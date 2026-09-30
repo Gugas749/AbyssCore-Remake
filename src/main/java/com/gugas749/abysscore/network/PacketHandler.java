@@ -5,6 +5,8 @@ import com.gugas749.abysscore.api.attachment.SyncAttachmentClientHandler;
 import com.gugas749.abysscore.api.attachment.SyncAttachmentPacket;
 import com.gugas749.abysscore.api.network.AbyssNetworkChannel;
 import com.gugas749.abysscore.api.network.AbyssPacketHandler;
+import com.gugas749.abysscore.api.permission.AbyssClientPermission;
+import com.gugas749.abysscore.api.permission.PermissionSyncPacket;
 import com.gugas749.abysscore.client.ACVanishHudHandler;
 import com.gugas749.abysscore.client.ui.screens.BlindScreen;
 import com.gugas749.abysscore.features.regions.ACNoEntryListener;
@@ -25,7 +27,7 @@ public class PacketHandler {
 
     /** AbyssCore's own channel. Bump the version string whenever a packet's fields change. */
     public static final AbyssNetworkChannel CHANNEL =
-            AbyssNetworkChannel.create(Abysscore.asResource("main"), "2");
+            AbyssNetworkChannel.create(Abysscore.asResource("main"), "3");   // 3: permission sync for the GUI API
 
     /**
      * Called once from the mod constructor.
@@ -97,5 +99,10 @@ public class PacketHandler {
         AbyssPacketHandler.registerC2S(CHANNEL,
             RequestRegionScreenPacket.class, RequestRegionScreenPacket.CODEC,
             RegionScreenPacketHandlers::handleRequest);
+
+        // ── GUI API (added at the END — never insert packets in the middle) ──
+        AbyssPacketHandler.registerS2C(CHANNEL,
+            PermissionSyncPacket.class, PermissionSyncPacket.CODEC,
+            () -> AbyssClientPermission::handle);
     }
 }

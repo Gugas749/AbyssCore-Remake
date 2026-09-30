@@ -1,169 +1,128 @@
 package com.gugas749.abysscore.client.ui.screens;
 
-import com.gugas749.abysscore.client.ui.AbyssUI;
+import com.gugas749.abysscore.api.gui.layout.AbyssLayout;
+import com.gugas749.abysscore.api.gui.screen.AbyssPanelScreen;
+import com.gugas749.abysscore.api.gui.screen.AbyssTab;
+import com.gugas749.abysscore.api.gui.screen.TabContext;
+import com.gugas749.abysscore.api.gui.theme.AbyssTheme;
+import com.gugas749.abysscore.api.gui.widget.AbyssButton;
+import com.gugas749.abysscore.api.gui.widget.AbyssTextField;
+import com.gugas749.abysscore.network.PacketHandler;
 import com.gugas749.abysscore.network.dimen.SubmitDimenCreatePacket;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import com.gugas749.abysscore.network.PacketHandler;
 
+import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Random;
 
-public class DimenCreateScreen extends Screen {
+/**
+ * Create a new dimension. Opened from the menu's Dimensions tab (or by the server).
+ * One tab → no sidebar, the form uses the whole panel.
+ */
+public class DimenCreateScreen extends AbyssPanelScreen {
 
-    private static final int W = 300;
-    private static final int H = 260;
-    private static final int PAD = AbyssUI.PAD;
-
-    private int px, py;
-    private final Screen previousScreen;
-
-    private EditBox nameBox;
-    private EditBox displayNameBox;
-    private EditBox seedBox;
-    // Style and Random Seed are drawn manually — no vanilla widgets
-    private String currentStyle = "NORMAL";
     private static final String[] STYLES = {"NORMAL", "SUPERFLAT", "VOID"};
 
-    public DimenCreateScreen(Screen previousScreen) {
-        super(Component.translatable("screen.abysscore.dimen.create.title"));
-        this.previousScreen = previousScreen;
+    // Form state — fields, so resizing the window keeps what was typed
+    private String name = "", displayName = "", seed = "0";
+    private int style = 0;
+
+    public DimenCreateScreen(@Nullable Screen parent) {
+        super(Component.literal("\u2318  CREATE DIMENSION"), parent);
     }
 
-    // Backwards-compatible no-arg constructor
+    /** Used when the server opens this screen directly. */
     public DimenCreateScreen() { this(null); }
 
+    @Override protected int panelWidth()  { return 270; }
+    @Override protected int panelHeight() { return 210; }
+
     @Override
-    protected void init() {
-        px = (width  - W) / 2;
-        py = (height - H) / 2;
-
-        int x  = px + PAD + 4;
-        int fw = W - (PAD + 4) * 2;
-        int hw = (fw - 4) / 2;
-        int y  = py + AbyssUI.HEADER_H + PAD * 2;
-
-        nameBox = abyssField(x, y, fw, "e.g. my_world"); y += 34;
-        displayNameBox = abyssField(x, y, fw, "e.g. My World"); y += 34;
-        // Style row — drawn manually, y += 34
-        y += 34;
-        seedBox = abyssField(x, y, hw, "0 = random");
-        seedBox.setMaxLength(20);
-        seedBox.setValue("0");
-        // Random button drawn manually
+    protected void addTabs(List<AbyssTab> tabs) {
+        tabs.add(new FormTab());
     }
 
-    private void cycleStyle() {
-        for (int i = 0; i < STYLES.length; i++) {
-            if (STYLES[i].equals(currentStyle)) {
-                currentStyle = STYLES[(i + 1) % STYLES.length];
-                return;
+    private class FormTab implements AbyssTab {
+        private AbyssButton createButton;
+
+        @Override public Component title() { return Component.literal("Create"); }
+
+        @Override
+        public void init(TabContext ctx) {
+            int w = ctx.width;
+
+            var nameField = ctx.add(new AbyssTextField(ctx.x, ctx.y + 10, w, Component.literal("e.g. my_world")));
+            nameField.setMaxLength(64);
+            nameField.setValue(name);
+            nameField.setResponder(v -> { name = v; updateCreate(); });
+
+            var displayField = ctx.add(new AbyssTextField(ctx.x, ctx.y + 42, w, Component.literal("e.g. My World")));
+            displayField.setMaxLength(64);
+            displayField.setValue(displayName);
+            displayField.setResponder(v -> displayName = v);
+
+            // Style: one button that cycles NORMAL → SUPERFLAT → VOID
+            ctx.add(new AbyssButton(ctx.x, ctx.y + 74, w, styleLabel(), b -> {
+                style = (style + 1) % STYLES.length;
+                ctx.rebuild();   // the seed row only exists for NORMAL
+            }));
+
+            if (STYLES[style].equals("NORMAL")) {
+                int half = (w - 4) / 2;
+                var seedField = ctx.add(new AbyssTextField(ctx.x, ctx.y + 110, half, Component.literal("0 = random")));
+                seedField.setMaxLength(20);
+                seedField.setFilter(s -> s.matches("-?\\d*"));   // a (possibly negative) whole number
+                seedField.setValue(seed);
+                seedField.setResponder(v -> seed = v);
+                ctx.add(new AbyssButton(ctx.x + half + 4, ctx.y + 110, half, Component.literal("\u21BA Random"), b -> {
+                    seed = String.valueOf(new Random().nextLong());
+                    ctx.rebuild();
+                }));
+            }
+
+            var row = AbyssLayout.row(ctx.x, ctx.y + ctx.height - AbyssButton.HEIGHT, 4);
+            createButton = row.add(ctx.add(new AbyssButton(0, 0, 90, Component.literal("Create"), b -> create())));
+            row.add(ctx.add(new AbyssButton(0, 0, 90, Component.literal("Cancel"), b -> onClose())));
+            updateCreate();
+        }
+
+        private Component styleLabel() {
+            String s = STYLES[style];
+            return Component.literal("Style: " + s.charAt(0) + s.substring(1).toLowerCase());
+        }
+
+        private void updateCreate() {
+            if (createButton != null) createButton.active = !sanitized().isEmpty();
+        }
+
+        @Override
+        public void render(GuiGraphics g, TabContext ctx, int mouseX, int mouseY, float partialTick) {
+            var font = ctx.font();
+            g.drawString(font, "Internal name", ctx.x, ctx.y + 1, AbyssTheme.TEXT_DIM, false);
+            // Show what the id will really be (lowercase, a–z 0–9 _)
+            String id = sanitized();
+            if (!id.isEmpty() && !id.equals(name)) {
+                String preview = "\u2192 " + id;
+                g.drawString(font, preview, ctx.x + ctx.width - font.width(preview), ctx.y + 1, AbyssTheme.ACCENT, false);
+            }
+            g.drawString(font, "Display name", ctx.x, ctx.y + 33, AbyssTheme.TEXT_DIM, false);
+            if (STYLES[style].equals("NORMAL")) {
+                g.drawString(font, "Seed", ctx.x, ctx.y + 101, AbyssTheme.TEXT_DIM, false);
             }
         }
     }
 
-    private EditBox abyssField(int x, int y, int w, String hint) {
-        EditBox box = new EditBox(font, x, y + 1, w, 16, Component.literal(hint));
-        box.setMaxLength(64);
-        box.setHint(Component.literal(hint));
-        box.setBordered(false);
-        addRenderableWidget(box);
-        return box;
+    /** Dimension ids may only contain a–z, 0–9 and _ . */
+    private String sanitized() {
+        return name.trim().toLowerCase().replaceAll("[^a-z0-9_]", "_");
     }
 
-    private void onCreate() {
-        String rawName = nameBox.getValue().trim().toLowerCase().replaceAll("[^a-z0-9_]", "_");
-        if (rawName.isEmpty()) return;
-        long seed = 0;
-        try { seed = Long.parseLong(seedBox.getValue().trim()); }
-        catch (NumberFormatException ignored) {}
-        PacketHandler.CHANNEL.sendToServer(new SubmitDimenCreatePacket(
-            rawName, displayNameBox.getValue().trim(), currentStyle, seed));
-        net.minecraft.client.Minecraft.getInstance().setScreen(previousScreen);
+    private void create() {
+        long seedValue = 0;
+        try { seedValue = Long.parseLong(seed.trim()); } catch (NumberFormatException ignored) {}
+        PacketHandler.CHANNEL.sendToServer(new SubmitDimenCreatePacket(sanitized(), displayName.trim(), STYLES[style], seedValue));
+        onClose();
     }
-
-    private void goBack() {
-        net.minecraft.client.Minecraft.getInstance().setScreen(previousScreen);
-    }
-
-    @Override
-    public void render(GuiGraphics g, int mx, int my, float delta) {
-        AbyssUI.drawBackground(g, width, height);
-        AbyssUI.drawPanel(g, px, py, W, H);
-        AbyssUI.drawHeader(g, font, px, py, W, "\u2318  Create Dimension");
-
-        int x  = px + PAD + 4;
-        int fw = W - (PAD + 4) * 2;
-        int hw = (fw - 4) / 2;
-        int y  = py + AbyssUI.HEADER_H + PAD * 2;
-
-        // Internal Name
-        drawFieldLabel(g, x, y, "Internal Name"); drawFieldBg(g, x, y, fw); y += 34;
-        // Display Name
-        drawFieldLabel(g, x, y, "Display Name"); drawFieldBg(g, x, y, fw); y += 34;
-
-        // Style — Abyss-style cycle button
-        drawFieldLabel(g, x, y, "Style");
-        String styleLabel = currentStyle.charAt(0) + currentStyle.substring(1).toLowerCase();
-        boolean styleHov = AbyssUI.isHovered(mx, my, x, y, fw, 16);
-        AbyssUI.drawButton(g, font, x, y, fw, 16, styleLabel, styleHov, false);
-        y += 34;
-
-        // Seed row (only for NORMAL)
-        if ("NORMAL".equals(currentStyle)) {
-            drawFieldLabel(g, x, y, "Seed");
-            drawFieldBg(g, x, y, hw);
-            // Random button — Abyss style
-            boolean randHov = AbyssUI.isHovered(mx, my, x + hw + 4, y, hw, 16);
-            AbyssUI.drawButton(g, font, x + hw + 4, y, hw, 16, "\u21BA Random", randHov, false);
-            seedBox.setVisible(true);
-        } else {
-            seedBox.setVisible(false);
-        }
-
-        // Bottom buttons
-        int by = py + H - PAD - 20;
-        int btnW = 100;
-        AbyssUI.drawButton(g, font, x, by, btnW, 18,
-            "\u00a7bCreate", AbyssUI.isHovered(mx, my, x, by, btnW, 18), false);
-        AbyssUI.drawButton(g, font, px + W - PAD - 4 - 80, by, 80, 18,
-            "\u00a7cCancel", AbyssUI.isHovered(mx, my, px + W - PAD - 4 - 80, by, 80, 18), true);
-
-        super.render(g, mx, my, delta);
-    }
-
-    @Override
-    public boolean mouseClicked(double mx, double my, int button) {
-        int x  = px + PAD + 4;
-        int fw = W - (PAD + 4) * 2;
-        int hw = (fw - 4) / 2;
-        int y  = py + AbyssUI.HEADER_H + PAD * 2 + 34 + 34; // style row y
-        int by = py + H - PAD - 20;
-        int btnW = 100;
-
-        // Style cycle
-        if (AbyssUI.isHovered(mx, my, x, y, fw, 16)) { cycleStyle(); return true; }
-        // Random seed
-        if ("NORMAL".equals(currentStyle) && AbyssUI.isHovered(mx, my, x + hw + 4, y + 34, hw, 16)) {
-            seedBox.setValue(String.valueOf(new Random().nextLong())); return true;
-        }
-        // Create
-        if (AbyssUI.isHovered(mx, my, x, by, btnW, 18)) { onCreate(); return true; }
-        // Cancel
-        if (AbyssUI.isHovered(mx, my, px + W - PAD - 4 - 80, by, 80, 18)) { goBack(); return true; }
-
-        return super.mouseClicked(mx, my, button);
-    }
-
-    private void drawFieldLabel(GuiGraphics g, int x, int y, String label) {
-        g.drawString(font, "\u00a77" + label, x, y - 9, AbyssUI.TEXT_MUTED, false);
-    }
-
-    private void drawFieldBg(GuiGraphics g, int x, int y, int w) {
-        g.fill(x - 2, y - 1, x + w + 2, y + 17, AbyssUI.PANEL_LIGHT);
-        AbyssUI.drawBorder(g, x - 2, y - 1, w + 4, 18, AbyssUI.BORDER);
-    }
-
-    @Override public boolean isPauseScreen() { return false; }
 }
