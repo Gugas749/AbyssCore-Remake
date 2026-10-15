@@ -34,6 +34,7 @@ public class AbyssDialog extends Screen {
     private static final int WIDTH = 220;
     private static final int PAD = 10;
     private static final int LINE_H = 10;
+    private static final float DIALOG_Z = 300;
 
     private final Screen parent;
     private final Kind kind;
@@ -147,9 +148,9 @@ public class AbyssDialog extends Screen {
 
     // ── Rendering ──────────────────────────────────────────────────────────────
 
-    /** Parent (frozen, no hover), dark overlay, the dialog box. Everything UNDER the buttons. */
-    protected void renderDialog(GuiGraphics g, float partialTick) {
-        parent.render(g, -1, -1, partialTick);                 // -1,-1: nothing in the parent looks hovered
+
+    /** Dark overlay + the dialog box — everything UNDER the buttons, inside the raised layer. */
+    protected void renderDialog(GuiGraphics g) {
         g.fill(0, 0, this.width, this.height, AbyssTheme.DIM_OVERLAY);
 
         AbyssDraw.nineSlice(g, AbyssTheme.PANEL, AbyssTheme.PANEL_BORDER, boxX, boxY, WIDTH, boxH);
@@ -164,11 +165,16 @@ public class AbyssDialog extends Screen {
         }
     }
 
-    // Forge 1.20.1: draw everything under the widgets, then the widgets.
+    // Forge 1.20.1: parent at Z = 0, then the whole dialog (overlay, box, buttons) raised in front of it.
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        renderDialog(g, partialTick);
-        super.render(g, mouseX, mouseY, partialTick);
+        parent.render(g, -1, -1, partialTick);         // -1,-1: nothing in the parent looks hovered
+
+        g.pose().pushPose();
+        g.pose().translate(0, 0, DIALOG_Z);
+        renderDialog(g);
+        super.render(g, mouseX, mouseY, partialTick);  // the dialog's buttons / text field
+        g.pose().popPose();
     }
 
     @Override
