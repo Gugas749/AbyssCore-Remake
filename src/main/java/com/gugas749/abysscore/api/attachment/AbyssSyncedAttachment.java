@@ -53,10 +53,28 @@ public class AbyssSyncedAttachment<T> {
 
     public void set(ServerPlayer player, T value) {
         player.setData(this.attachmentType.get(), value);
+        sync(player);
+    }
 
-        byte[] encoded = encode(value);
-        SyncAttachmentPacket packet = new SyncAttachmentPacket(this.id, encoded);
-        PacketDistributor.sendToPlayer(player, packet);
+    /**
+     * Stores the value WITHOUT telling the client. For values that change very often (every tick)
+     * where the client only needs some of the updates — call sync(player) when it matters.
+     */
+    public void setSilently(ServerPlayer player, T value) {
+        player.setData(this.attachmentType.get(), value);
+    }
+
+    /** Sends the player's current value to their client. */
+    public void sync(ServerPlayer player) {
+        byte[] encoded = encode(get(player));
+        PacketDistributor.sendToPlayer(player, new SyncAttachmentPacket(this.id, encoded));
+    }
+
+    /** Sends every registered synced attachment to the player. */
+    public static void syncAll(ServerPlayer player) {
+        for (AbyssSyncedAttachment<?> attachment : REGISTRY.values()) {
+            attachment.sync(player);
+        }
     }
 
     public static <T> AbyssSyncedAttachment<T> register(String name, T defaultValue, Codec<T> codec) {
@@ -79,6 +97,26 @@ public class AbyssSyncedAttachment<T> {
         for (AbyssSyncedAttachment<?> attachment : REGISTRY.values()) {
             attachment.cloneData(event.getOriginal(), event.getEntity());
         }
+    }
+
+    /*
+     * The CLIENT forgets attachment data whenever it gets a new player entity: joining the
+     * server, respawning, and changing dimension. Without these three, a HUD reading a synced
+     * attachment would show the default value until the server happened to call set() again.
+     */
+    @SubscribeEvent
+    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) syncAll(player);
+    }
+
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) syncAll(player);
+    }
+
+    @SubscribeEvent
+    public static void onChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) syncAll(player);
     }
 
     //-----------------------------------------------------------------------------------

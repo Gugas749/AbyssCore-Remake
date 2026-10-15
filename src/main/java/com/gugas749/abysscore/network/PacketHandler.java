@@ -1,5 +1,7 @@
 package com.gugas749.abysscore.network;
 
+import com.gugas749.abysscore.api.overlay.AbyssOverlayRenderer;
+import com.gugas749.abysscore.api.overlay.ScreenOverlayPacket;
 import com.gugas749.abysscore.api.attachment.SyncAttachmentClientHandler;
 import com.gugas749.abysscore.api.attachment.SyncAttachmentPacket;
 import com.gugas749.abysscore.api.network.AbyssPacketHandler;
@@ -31,7 +33,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 public class PacketHandler {
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar("3");   // 3: permission sync for the GUI API
+        PayloadRegistrar registrar = event.registrar("4");   // 4: screen overlay packet (ABY-15)
 
         // ── S2C ──────────────────────────────────────────────────────────────
         
@@ -105,5 +107,10 @@ public class PacketHandler {
         AbyssPacketHandler.registerS2C(registrar,
                 PermissionSyncPacket.TYPE, PermissionSyncPacket.CODEC,
                 () -> AbyssClientPermission::handle);
+
+        // ── Screen overlays (ABY-15) ──
+        AbyssPacketHandler.registerS2C(registrar,
+                ScreenOverlayPacket.TYPE, ScreenOverlayPacket.CODEC,
+                () -> AbyssOverlayRenderer::handle);
     }
 }

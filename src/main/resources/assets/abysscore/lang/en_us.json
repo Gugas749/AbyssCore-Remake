@@ -8,7 +8,7 @@
   "message.abysscore.no_tp_blocked": "§9A strange power prevents you from teleporting here.",
   "message.abysscore.no_entry_blocked": "§cYou cannot enter this area.",
   "_comment_protect_cmd": "--- /abysscore protect command ---",
-  "message.abysscore.protect.invalid_tag": "§1[AbyssCore] §f'%s' is not a valid tag. Use: no_build, no_interact, no_fly, no_friendlyfire, no_hunger, no_tp, no_mobspawning_hostile, no_mobspawning_pacific.",
+  "message.abysscore.protect.invalid_tag": "§1[AbyssCore] §f'%s' is not a valid tag. Use: no_build, no_interact, no_fly, no_friendlyfire, no_hunger, no_tp, no_mobspawning_hostile, no_mobspawning_pacific, keep_inventory.",
   "message.abysscore.protect.region_not_found": "§1[AbyssCore] §fRegion '%s' does not exist.",
   "message.abysscore.protect.region_already_has_tag": "§1[AbyssCore] §fRegion '%s' already has the tag '%s'.",
   "message.abysscore.protect.region_tag_added": "§1[AbyssCore] §fRegion '%s' now has the tag '%s'.",
@@ -197,5 +197,10 @@
   "gui.abysscore.list.empty": "Nothing here yet.",
   "gui.abysscore.dialog.ok": "OK",
   "gui.abysscore.dialog.cancel": "Cancel",
-  "gui.abysscore.dialog.confirm": "Confirm"
+  "gui.abysscore.dialog.confirm": "Confirm",
+  "_comment_aby_63_84_16": "--- ABY-63 permissions, ABY-84 keep inventory, ABY-16 corruption ---",
+  "message.abysscore.no_permission": "§1[AbyssCore] §cYou need §f%1$s §cto do that.",
+  "command.abysscore.corruption.check": "§5[Corruption] §f%1$s §7corruption: §d%2$s%%",
+  "command.abysscore.corruption.set": "§5[Corruption] §f%1$s§7's corruption is now §d%2$s%%",
+  "command.abysscore.corruption.hud": "§5[Corruption] §aCorruption bar is now §f%1$s§a."
 }

@@ -1,6 +1,7 @@
 package com.gugas749.abysscore;
 
 import com.gugas749.abysscore.api.attachment.AbyssSyncedAttachment;
+import com.gugas749.abysscore.api.corruption.AbyssCorruption;
 import com.gugas749.abysscore.api.attachment.SyncAttachmentClientHandler;
 import com.gugas749.abysscore.api.attachment.SyncAttachmentPacket;
 import com.gugas749.abysscore.api.effects.AbyssEffectHandler;
@@ -17,6 +18,7 @@ import com.gugas749.abysscore.features.bulk.BulkCommandManager;
 import com.gugas749.abysscore.features.chat.ACChatLockListener;
 import com.gugas749.abysscore.features.dimen.ACDimensionManager;
 import com.gugas749.abysscore.features.regions.ACBlockProtectionListener;
+import com.gugas749.abysscore.features.regions.ACKeepInventoryListener;
 import com.gugas749.abysscore.features.regions.ACNoEntryListener;
 import com.gugas749.abysscore.features.title.ACTitleManager;
 import com.gugas749.abysscore.features.vanish.ACVanishExtras;
@@ -51,6 +53,7 @@ public class Abysscore {
 
         // ── API ──────────────────────────────────────────────────────────────
         NeoForge.EVENT_BUS.register(new AbyssEffectHandler());
+        AbyssCorruption.init();   // must run BEFORE the next line: it registers the corruption attachment
         AbyssSyncedAttachment.ATTACHMENT_TYPES.register(modEventBus);
         NeoForge.EVENT_BUS.register(AbyssSyncedAttachment.class);
         NeoForge.EVENT_BUS.register(AbyssPermissionHandler.class);
@@ -73,6 +76,7 @@ public class Abysscore {
         NeoForge.EVENT_BUS.register(new ACBlockProtectionListener());
         NeoForge.EVENT_BUS.register(new ACVanishStateListener());
         NeoForge.EVENT_BUS.register(new ACNoEntryListener());
+        NeoForge.EVENT_BUS.register(new ACKeepInventoryListener());
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLogin);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLeave);

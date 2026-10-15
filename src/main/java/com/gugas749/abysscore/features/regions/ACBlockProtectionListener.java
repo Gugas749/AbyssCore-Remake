@@ -29,6 +29,8 @@ public class ACBlockProtectionListener {
     public static final String NO_MOBSPAWNING_HOSTILE_TAG  = "no_mobspawning_hostile";
     public static final String NO_MOBSPAWNING_PACIFIC_TAG  = "no_mobspawning_pacific";
     public static final String NO_ENTRY_TAG = "no_entry";
+    /** Not a restriction but a perk: deaths here keep inventory + XP (see ACKeepInventoryListener). */
+    public static final String KEEP_INVENTORY_TAG = "keep_inventory";
 
     // ── Waystones block registry names ────────────────────────────────────────
     private static final java.util.Set<String> WAYSTONE_BLOCK_IDS = java.util.Set.of(

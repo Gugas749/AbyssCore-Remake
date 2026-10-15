@@ -1,6 +1,8 @@
 package com.gugas749.abysscore.network.region;
 
 import com.gugas749.abysscore.Abysscore;
+import com.gugas749.abysscore.api.permission.AbyssPermissionHandler;
+import com.gugas749.abysscore.api.permission.AbyssPermissionLevel;
 import com.gugas749.abysscore.features.regions.ACRegionSavedData;
 import com.gugas749.abysscore.network.menu.packets.RequestRegionScreenPacket;
 import net.minecraft.network.chat.Component;
@@ -20,7 +22,7 @@ public class RegionScreenPacketHandlers {
     public static void handleRequest(RequestRegionScreenPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer op)) return;
-            if (!op.hasPermissions(2)) return;
+            if (!AbyssPermissionHandler.require(op, AbyssPermissionLevel.ADMIN)) return;   // regions are ADMIN (same as /abysscore region)
 
             var data = ACRegionSavedData.get(op.serverLevel());
             var entries = new ArrayList<OpenRegionScreenPacket.RegionEntry>();
@@ -44,7 +46,7 @@ public class RegionScreenPacketHandlers {
     public static void handleRegionUpdate(SubmitRegionUpdatePacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
-            if (!player.hasPermissions(2)) return;
+            if (!AbyssPermissionHandler.require(player, AbyssPermissionLevel.ADMIN)) return;
 
             ACRegionSavedData data = ACRegionSavedData.get(player.serverLevel());
             String name = packet.regionName();

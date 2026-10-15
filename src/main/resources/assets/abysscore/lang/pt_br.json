@@ -15,7 +15,7 @@
   "message.abysscore.protect.region_tag_removed": "§1[AbyssCore] §fA região '%s' não possui mais a tag '%s'.",
   "message.abysscore.protect.region_status_none": "§1[AbyssCore] §fA região '%s' não possui nenhuma tag.",
   "message.abysscore.protect.region_status_active": "§1[AbyssCore] §fA região '%s' possui a tag '%s'.",
-  "message.abysscore.protect.invalid_tag": "§1[AbyssCore] §f'%s' não é uma tag valida. Use: no_build, no_interact, no_fly, no_friendlyfire, no_hunger, no_tp, no_mobspawning_hostile, no_mobspawning_pacific.",
+  "message.abysscore.protect.invalid_tag": "§1[AbyssCore] §f'%s' não é uma tag valida. Use: no_build, no_interact, no_fly, no_friendlyfire, no_hunger, no_tp, no_mobspawning_hostile, no_mobspawning_pacific, keep_inventory.",
   "_comment_region_cmd": "--- /abysscore region command ---",
   "message.abysscore.region.already_exists": "§1[AbyssCore] §fA região '%s' já existe.",
   "message.abysscore.region.added": "§1[AbyssCore] §fRegião '%s' adicionada em %s de %s %s %s até %s %s %s.",
@@ -197,5 +197,10 @@
   "gui.abysscore.list.empty": "Ainda não há nada aqui.",
   "gui.abysscore.dialog.ok": "OK",
   "gui.abysscore.dialog.cancel": "Cancelar",
-  "gui.abysscore.dialog.confirm": "Confirmar"
+  "gui.abysscore.dialog.confirm": "Confirmar",
+  "_comment_aby_63_84_16": "--- ABY-63 permissões, ABY-84 keep inventory, ABY-16 corrupção ---",
+  "message.abysscore.no_permission": "§1[AbyssCore] §cPrecisas de §f%1$s §cpara fazer isso.",
+  "command.abysscore.corruption.check": "§5[Corrupção] §f%1$s §7corrupção: §d%2$s%%",
+  "command.abysscore.corruption.set": "§5[Corrupção] §7A corrupção de §f%1$s §7é agora §d%2$s%%",
+  "command.abysscore.corruption.hud": "§5[Corrupção] §aA barra de corrupção está agora §f%1$s§a."
 }

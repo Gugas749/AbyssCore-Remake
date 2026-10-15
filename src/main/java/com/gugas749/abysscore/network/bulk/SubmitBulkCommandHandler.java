@@ -1,6 +1,8 @@
 package com.gugas749.abysscore.network.bulk;
 
 import com.gugas749.abysscore.Abysscore;
+import com.gugas749.abysscore.api.permission.AbyssPermissionHandler;
+import com.gugas749.abysscore.api.permission.AbyssPermissionLevel;
 import com.gugas749.abysscore.features.bulk.BulkCommandData;
 import com.gugas749.abysscore.features.bulk.BulkCommandManager;
 import net.minecraft.network.chat.Component;
@@ -9,7 +11,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Handles SubmitBulkCommandPacket on the SERVER side.
- * Validates the sender has OP (level 2), then saves the new bulk command.
+ * Validates the sender is MODERATOR+ (same as /abysscore bulk), then saves the new bulk command.
  */
 public class SubmitBulkCommandHandler {
 
@@ -17,15 +19,14 @@ public class SubmitBulkCommandHandler {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
 
-            // Security: only OPs can create bulk commands
-            if (!player.hasPermissions(2)) {
+            // Security: MODERATOR+ can create bulk commands
+            if (!AbyssPermissionHandler.require(player, AbyssPermissionLevel.MODERATOR)) {
                 Abysscore.LOGGER.warn(
-                    "[AbyssCore] Player {} tried to create a bulk command without OP permissions!",
+                    "[AbyssCore] Player {} tried to create a bulk command without MODERATOR permissions!",
                     player.getName().getString()
                 );
                 return;
             }
-
             String name = packet.name().trim().toLowerCase();
 
             // Validate name

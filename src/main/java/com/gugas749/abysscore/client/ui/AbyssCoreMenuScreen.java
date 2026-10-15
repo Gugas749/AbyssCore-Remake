@@ -1,6 +1,8 @@
 package com.gugas749.abysscore.client.ui;
 
 import com.gugas749.abysscore.api.gui.dialog.AbyssDialog;
+import com.gugas749.abysscore.api.permission.AbyssClientPermission;
+import com.gugas749.abysscore.api.permission.AbyssPermissionLevel;
 import com.gugas749.abysscore.api.gui.layout.AbyssLayout;
 import com.gugas749.abysscore.api.gui.render.AbyssDraw;
 import com.gugas749.abysscore.api.gui.screen.AbyssPanelScreen;
@@ -65,11 +67,14 @@ public class AbyssCoreMenuScreen extends AbyssPanelScreen {
 
     @Override
     protected void addTabs(List<AbyssTab> tabs) {
+        // The menu opens for MODERATOR+. Vanish, regions and dimensions are ADMIN-only on the
+        // server (ABY-63), so a moderator doesn't get tabs whose every button would be refused.
+        boolean admin = AbyssClientPermission.has(AbyssPermissionLevel.ADMIN);
         tabs.add(new PlayersTab());
         tabs.add(new TitlesTab());
-        tabs.add(new VanishTab());
-        tabs.add(new RegionsTab());
-        tabs.add(new DimensionsTab());
+        if (admin) tabs.add(new VanishTab());
+        if (admin) tabs.add(new RegionsTab());
+        if (admin) tabs.add(new DimensionsTab());
         tabs.add(new HelpTab());
         tabs.add(new BulkTab());
     }
@@ -133,8 +138,10 @@ public class AbyssCoreMenuScreen extends AbyssPanelScreen {
                         Component.literal("Select a player to change their state.")).color(AbyssTheme.TEXT_DIM));
                 return;
             }
-            row.add(ctx.add(new AbyssToggle(0, 0, Component.literal("Vanish"), p.vanished(), on -> toggle(p.uuid(), 0))));
-            row.space(8);
+            if (AbyssClientPermission.has(AbyssPermissionLevel.ADMIN)) {   // vanish is ADMIN-only
+                row.add(ctx.add(new AbyssToggle(0, 0, Component.literal("Vanish"), p.vanished(), on -> toggle(p.uuid(), 0))));
+                row.space(8);
+            }
             row.add(ctx.add(new AbyssToggle(0, 0, Component.literal("God"), p.godMode(), on -> toggle(p.uuid(), 1))));
             row.space(8);
             row.add(ctx.add(new AbyssToggle(0, 0, Component.literal("Blind"), p.blinded(), on -> toggle(p.uuid(), 2))));

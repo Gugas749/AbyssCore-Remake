@@ -3,7 +3,6 @@ package com.gugas749.abysscore.api.permission;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.gugas749.abysscore.Abysscore;
-import com.gugas749.abysscore.features.title.ACTitle;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -46,6 +45,19 @@ public class AbyssPermissionHandler {
     public static boolean sourceHas(CommandSourceStack source, AbyssPermissionLevel required) {
         if (!(source.getEntity() instanceof ServerPlayer player)) return false;
         return has(player, required);
+    }
+
+    /**
+     * For packet handlers: checks the level and, if the player is missing it, tells them
+     * instead of silently ignoring the click.
+     *
+     *   if (!AbyssPermissionHandler.require(player, AbyssPermissionLevel.MODERATOR)) return;
+     */
+    public static boolean require(ServerPlayer player, AbyssPermissionLevel required) {
+        if (has(player, required)) return true;
+        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                "message.abysscore.no_permission", required.name()));
+        return false;
     }
 
     // ── Load / Save ───────────────────────────────────────────────────────────
