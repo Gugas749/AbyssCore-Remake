@@ -34,6 +34,7 @@ public class AbyssDialog extends Screen {
     private static final int WIDTH = 220;
     private static final int PAD = 10;
     private static final int LINE_H = 10;
+    private static final float DIALOG_Z = 300;
 
     private final Screen parent;
     private final Kind kind;
@@ -147,9 +148,8 @@ public class AbyssDialog extends Screen {
 
     // ── Rendering ──────────────────────────────────────────────────────────────
 
-    /** Parent (frozen, no hover), dark overlay, the dialog box. Everything UNDER the buttons. */
-    protected void renderDialog(GuiGraphics g, float partialTick) {
-        parent.render(g, -1, -1, partialTick);                 // -1,-1: nothing in the parent looks hovered
+    /** Dark overlay + the dialog box — everything UNDER the buttons, inside the raised layer. */
+    protected void renderDialog(GuiGraphics g) {
         g.fill(0, 0, this.width, this.height, AbyssTheme.DIM_OVERLAY);
 
         AbyssDraw.nineSlice(g, AbyssTheme.PANEL, AbyssTheme.PANEL_BORDER, boxX, boxY, WIDTH, boxH);
@@ -164,10 +164,23 @@ public class AbyssDialog extends Screen {
         }
     }
 
-    // NeoForge 1.21.1: render() calls renderBackground() first → our dialog instead of the blur
+    // NeoForge 1.21.1: parent at Z = 0, then the whole dialog raised in front of it.
+    // super.render() calls renderBackground() (below) and then draws the widgets —
+    // both inside the raised layer.
+    @Override
+    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        parent.render(g, -1, -1, partialTick);         // -1,-1: nothing in the parent looks hovered
+
+        g.pose().pushPose();
+        g.pose().translate(0, 0, DIALOG_Z);
+        super.render(g, mouseX, mouseY, partialTick);
+        g.pose().popPose();
+    }
+
+    // Called by super.render() → our overlay + box instead of vanilla's blur
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        renderDialog(g, partialTick);
+        renderDialog(g);
     }
 
     @Override
