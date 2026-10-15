@@ -54,9 +54,9 @@ public final class CorruptionHudOverlay {
         }));
     }
 
-    /** GUI layers are a MOD bus event → separate subscriber class. */
+    /** RegisterGuiLayersEvent is a MOD-bus event; NeoForge routes it automatically (no bus = needed). */
     @OnlyIn(Dist.CLIENT)
-    @EventBusSubscriber(modid = Abysscore.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+    @EventBusSubscriber(modid = Abysscore.MODID, value = Dist.CLIENT)
     public static final class Registration {
         @SubscribeEvent
         public static void onRegisterLayers(RegisterGuiLayersEvent event) {

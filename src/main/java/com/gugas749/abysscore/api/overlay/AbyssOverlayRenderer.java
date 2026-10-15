@@ -80,9 +80,9 @@ public final class AbyssOverlayRenderer {
         TIMED.clear();
     }
 
-    /** GUI layers are registered on the MOD event bus, so this needs its own subscriber class. */
+    /** RegisterGuiLayersEvent is a MOD-bus event; NeoForge routes it automatically (no bus = needed). */
     @OnlyIn(Dist.CLIENT)
-    @EventBusSubscriber(modid = Abysscore.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+    @EventBusSubscriber(modid = Abysscore.MODID, value = Dist.CLIENT)
     public static final class Registration {
         @SubscribeEvent
         public static void onRegisterLayers(RegisterGuiLayersEvent event) {
@@ -120,7 +120,7 @@ public final class AbyssOverlayRenderer {
             AbyssOverlaySpec spec = bindings.get(key.get().location());
             if (spec == null) continue;
 
-            float strength = spec.scaleWithAmplifier() ? Math.min(1f, (inst.getAmplifier() + 1) / 4f) : 1f;
+            float strength = spec.ampScaling() ? Math.min(1f, (inst.getAmplifier() + 1) / 4f) : 1f;
             float fadeOut = 1f;
             if (!inst.isInfiniteDuration() && spec.fadeOutTicks() > 0) {
                 fadeOut = Math.min(1f, inst.getDuration() / (float) spec.fadeOutTicks());

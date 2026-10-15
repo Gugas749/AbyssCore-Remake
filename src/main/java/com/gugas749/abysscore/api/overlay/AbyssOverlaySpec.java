@@ -11,10 +11,10 @@ package com.gugas749.abysscore.api.overlay;
  * @param style              TINT = whole screen, VIGNETTE = darkened edges only
  * @param fadeInTicks        ticks to go from 0 to maxAlpha (20 ticks = 1 second)
  * @param fadeOutTicks       ticks to go from maxAlpha back to 0 at the end
- * @param scaleWithAmplifier effect overlays only: level I = 25%, II = 50%, III = 75%, IV+ = 100%
+ * @param ampScaling         effect overlays only: level I = 25%, II = 50%, III = 75%, IV+ = 100%
  */
 public record AbyssOverlaySpec(int color, float maxAlpha, Style style,
-                               int fadeInTicks, int fadeOutTicks, boolean scaleWithAmplifier) {
+                               int fadeInTicks, int fadeOutTicks, boolean ampScaling) {
 
     public enum Style { TINT, VIGNETTE }
 
@@ -34,9 +34,14 @@ public record AbyssOverlaySpec(int color, float maxAlpha, Style style,
     }
 
     public AbyssOverlaySpec fade(int inTicks, int outTicks) {
-        return new AbyssOverlaySpec(color, maxAlpha, style, inTicks, outTicks, scaleWithAmplifier);
+        return new AbyssOverlaySpec(color, maxAlpha, style, inTicks, outTicks, ampScaling);
     }
 
+    /**
+     * Turns on ampScaling. (It can't be named the same as the record component: a record
+     * auto-creates scaleWithAmplifier() returning the boolean, so a second method with that
+     * name returning AbyssOverlaySpec is a compile error.)
+     */
     public AbyssOverlaySpec scaleWithAmplifier() {
         return new AbyssOverlaySpec(color, maxAlpha, style, fadeInTicks, fadeOutTicks, true);
     }
