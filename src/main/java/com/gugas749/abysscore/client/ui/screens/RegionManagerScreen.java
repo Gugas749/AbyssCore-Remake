@@ -49,6 +49,7 @@ public class RegionManagerScreen extends AbyssPanelScreen {
         TAGS.put(ACBlockProtectionListener.NO_MOBSPAWNING_HOSTILE_TAG, "No Hostile Mobs");
         TAGS.put(ACBlockProtectionListener.NO_MOBSPAWNING_PACIFIC_TAG, "No Passive Mobs");
         TAGS.put(ACBlockProtectionListener.NO_ENTRY_TAG, "No Entry");
+        TAGS.put(ACBlockProtectionListener.KEEP_INVENTORY_TAG, "Keep Inventory");
     }
 
     /** Set by whoever sends RequestRegionScreenPacket, so the server's answer knows where "back" is. */

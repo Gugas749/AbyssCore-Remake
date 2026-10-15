@@ -1,6 +1,8 @@
 package com.gugas749.abysscore.network.dimen;
 
 import com.gugas749.abysscore.Abysscore;
+import com.gugas749.abysscore.api.permission.AbyssPermissionHandler;
+import com.gugas749.abysscore.api.permission.AbyssPermissionLevel;
 import com.gugas749.abysscore.features.dimen.ACDimensionData;
 import com.gugas749.abysscore.features.dimen.ACDimensionManager;
 import net.minecraft.network.chat.Component;
@@ -14,7 +16,7 @@ public class DimenPacketHandlers {
     public static void handleCreate(SubmitDimenCreatePacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
-            if (!player.hasPermissions(2)) return;
+            if (!AbyssPermissionHandler.require(player, AbyssPermissionLevel.ADMIN)) return;   // same as /abysscore dimen
 
             String name = packet.name().trim().toLowerCase().replaceAll("[^a-z0-9_]", "_");
             if (name.isEmpty()) {

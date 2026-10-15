@@ -1,6 +1,7 @@
 package com.gugas749.abysscore;
 
 import com.gugas749.abysscore.api.attachment.AbyssSyncedAttachment;
+import com.gugas749.abysscore.api.corruption.AbyssCorruption;
 import com.gugas749.abysscore.api.effects.AbyssEffectHandler;
 import com.gugas749.abysscore.api.permission.AbyssPermissionHandler;
 import com.gugas749.abysscore.client.ClientSetup;
@@ -11,6 +12,7 @@ import com.gugas749.abysscore.features.bulk.BulkCommandManager;
 import com.gugas749.abysscore.features.chat.ACChatLockListener;
 import com.gugas749.abysscore.features.dimen.ACDimensionManager;
 import com.gugas749.abysscore.features.regions.ACBlockProtectionListener;
+import com.gugas749.abysscore.features.regions.ACKeepInventoryListener;
 import com.gugas749.abysscore.features.regions.ACNoEntryListener;
 import com.gugas749.abysscore.features.title.ACTitleManager;
 import com.gugas749.abysscore.features.vanish.ACVanishExtras;
@@ -41,6 +43,7 @@ public class Abysscore {
 
         // ── API ──────────────────────────────────────────────────────────────
         MinecraftForge.EVENT_BUS.register(new AbyssEffectHandler());
+        AbyssCorruption.init();   // loads the class → registers the "corruption" synced attachment
         MinecraftForge.EVENT_BUS.register(AbyssSyncedAttachment.class);   // static handlers
         MinecraftForge.EVENT_BUS.register(AbyssPermissionHandler.class);  // static handlers
 
@@ -60,6 +63,7 @@ public class Abysscore {
         MinecraftForge.EVENT_BUS.register(new ACBlockProtectionListener());
         MinecraftForge.EVENT_BUS.register(new ACVanishStateListener());
         MinecraftForge.EVENT_BUS.register(new ACNoEntryListener());
+        MinecraftForge.EVENT_BUS.register(new ACKeepInventoryListener());
         MinecraftForge.EVENT_BUS.register(new ACChatLockListener());
         MinecraftForge.EVENT_BUS.addListener(this::onServerStarting);
         MinecraftForge.EVENT_BUS.addListener(this::onPlayerLogin);

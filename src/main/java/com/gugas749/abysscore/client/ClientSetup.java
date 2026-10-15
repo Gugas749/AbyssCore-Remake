@@ -1,5 +1,6 @@
 package com.gugas749.abysscore.client;
 
+import com.gugas749.abysscore.api.overlay.AbyssOverlayRenderer;
 import com.gugas749.abysscore.client.ui.screens.BlindScreen;
 import com.gugas749.abysscore.network.region.NoEntryHandler;
 import net.minecraftforge.api.distmarker.Dist;
@@ -20,6 +21,10 @@ public final class ClientSetup {
     public static void init(IEventBus modEventBus) {
         // Key mappings are a MOD bus event
         modEventBus.addListener(KeyBindings::register);
+
+        // HUD overlays are a MOD bus event too (RegisterGuiOverlaysEvent)
+        modEventBus.addListener(AbyssOverlayRenderer::registerOverlay);   // ABY-15 tints / vignettes
+        modEventBus.addListener(CorruptionHudOverlay::registerOverlay);   // ABY-16 corruption bar
 
         // Rendering / ticking are GAME (Forge) bus events
         MinecraftForge.EVENT_BUS.register(new ClientTickHandler());

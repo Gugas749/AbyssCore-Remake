@@ -35,7 +35,7 @@ import java.util.Map;
  * Differences from the NeoForge version:
  *   - No DeferredRegister anymore → consuming mods must NOT call ATTACHMENT_TYPES.register(...)
  *   - On the client use getClient() instead of player.getData(type)
- *   - Values are re-synced automatically when the player logs in
+ *   - Values are re-synced automatically on login, respawn and dimension change
  */
 public class AbyssSyncedAttachment<T> {
 
@@ -93,9 +93,24 @@ public class AbyssSyncedAttachment<T> {
         sync(player);
     }
 
+    /**
+     * Stores the value WITHOUT telling the client. For values that change very often (every tick)
+     * where the client only needs some of the updates — call sync(player) when it matters.
+     */
+    public void setSilently(ServerPlayer player, T value) {
+        writeRaw(player, value);
+    }
+
     /** Sends the current server value to that player's client. */
     public void sync(ServerPlayer player) {
         PacketHandler.CHANNEL.sendToPlayer(player, new SyncAttachmentPacket(id, encode(get(player))));
+    }
+
+    /** Sends every registered synced attachment to the player. */
+    public static void syncAll(ServerPlayer player) {
+        for (AbyssSyncedAttachment<?> attachment : REGISTRY.values()) {
+            attachment.sync(player);
+        }
     }
 
     // ── Client API ────────────────────────────────────────────────────────────
@@ -123,13 +138,25 @@ public class AbyssSyncedAttachment<T> {
         }
     }
 
-    /** Client caches start empty on every login, so push all values once. */
+    /*
+     * Push every value to the client when it may be out of date:
+     *  - login: the client cache still holds whatever the LAST server sent (or the default)
+     *  - respawn / dimension change: the server just copied data onto a new player object
+     *    (onPlayerClone) — re-sending guarantees the HUD matches what was actually copied.
+     */
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        for (AbyssSyncedAttachment<?> attachment : REGISTRY.values()) {
-            attachment.sync(player);
-        }
+        if (event.getEntity() instanceof ServerPlayer player) syncAll(player);
+    }
+
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) syncAll(player);
+    }
+
+    @SubscribeEvent
+    public static void onChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) syncAll(player);
     }
 
     //-----------------------------------------------------------------------------------

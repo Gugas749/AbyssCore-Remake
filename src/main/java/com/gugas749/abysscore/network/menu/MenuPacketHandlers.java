@@ -1,5 +1,7 @@
 package com.gugas749.abysscore.network.menu;
 
+import com.gugas749.abysscore.api.permission.AbyssPermissionHandler;
+import com.gugas749.abysscore.api.permission.AbyssPermissionLevel;
 import com.gugas749.abysscore.commands.subRegisters.ACGodCommands;
 import com.gugas749.abysscore.features.bind.BindManager;
 import com.gugas749.abysscore.features.blind.ACBlindManager;
@@ -12,6 +14,7 @@ import com.gugas749.abysscore.features.vanish.ACVanishExtras;
 import com.gugas749.abysscore.network.menu.packets.MenuActionPacket;
 import com.gugas749.abysscore.network.menu.packets.OpenMainMenuPacket;
 import com.gugas749.abysscore.network.menu.packets.SaveTitlePacket;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -76,10 +79,23 @@ public class MenuPacketHandlers {
 
     // ── Handle action ─────────────────────────────────────────────────────────
 
+    /**
+     * Which level each menu action needs. Mirrors the matching /abysscore command:
+     * vanish, dimensions → ADMIN; everything else the menu does → MODERATOR.
+     */
+    static AbyssPermissionLevel requiredLevel(MenuActionPacket.Action action) {
+        return switch (action) {
+            case TOGGLE_VANISH, TOGGLE_TEAM_VISIBILITY,
+                 VANISH_SHOW_TO, VANISH_HIDE_FROM, VANISH_CLEAR,
+                 DIMEN_TP, DIMEN_CREATE -> AbyssPermissionLevel.ADMIN;
+            default -> AbyssPermissionLevel.MODERATOR;
+        };
+    }
+
     public static void handleAction(MenuActionPacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer op)) return;
-            if (!op.hasPermissions(2)) return;
+            if (!AbyssPermissionHandler.require(op, requiredLevel(packet.action()))) return;
             var server = op.getServer();
 
             switch (packet.action()) {
@@ -139,6 +155,11 @@ public class MenuPacketHandlers {
                 case HELP_ACCEPT -> ACHelpManager.accept(op, packet.targetUUID());
                 // ── Bulk ──────────────────────────────────────────────────────
                 case BULK_RUN -> BulkCommandManager.get(packet.stringArg1()).ifPresent(bulk -> {
+                    // Same rule as /abysscore run: the bulk command's own permLevel applies
+                    if (!op.hasPermissions(bulk.permLevel)) {
+                        op.sendSystemMessage(Component.translatable("message.abysscore.bulk.no_permission"));
+                        return;
+                    }
                     for (String cmd : bulk.commands) {
                         try {
                             op.getServer().getCommands().performPrefixedCommand(
@@ -158,7 +179,7 @@ public class MenuPacketHandlers {
     public static void handleSaveTitle(SaveTitlePacket packet, AbyssPacketContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer op)) return;
-            if (!op.hasPermissions(2)) return;
+            if (!AbyssPermissionHandler.require(op, AbyssPermissionLevel.MODERATOR)) return;
             ACTitle title = new ACTitle(
                     packet.id().isBlank() ? null : packet.id(),
                     packet.name(), packet.titleText(), packet.subtitleText(),

@@ -4,6 +4,8 @@ import com.gugas749.abysscore.Abysscore;
 import com.gugas749.abysscore.api.attachment.SyncAttachmentClientHandler;
 import com.gugas749.abysscore.api.attachment.SyncAttachmentPacket;
 import com.gugas749.abysscore.api.network.AbyssNetworkChannel;
+import com.gugas749.abysscore.api.overlay.AbyssOverlayRenderer;
+import com.gugas749.abysscore.api.overlay.ScreenOverlayPacket;
 import com.gugas749.abysscore.api.network.AbyssPacketHandler;
 import com.gugas749.abysscore.api.permission.AbyssClientPermission;
 import com.gugas749.abysscore.api.permission.PermissionSyncPacket;
@@ -27,7 +29,7 @@ public class PacketHandler {
 
     /** AbyssCore's own channel. Bump the version string whenever a packet's fields change. */
     public static final AbyssNetworkChannel CHANNEL =
-            AbyssNetworkChannel.create(Abysscore.asResource("main"), "3");   // 3: permission sync for the GUI API
+            AbyssNetworkChannel.create(Abysscore.asResource("main"), "4");   // 4: screen overlay packet (ABY-15)
 
     /**
      * Called once from the mod constructor.
@@ -104,5 +106,10 @@ public class PacketHandler {
         AbyssPacketHandler.registerS2C(CHANNEL,
             PermissionSyncPacket.class, PermissionSyncPacket.CODEC,
             () -> AbyssClientPermission::handle);
+
+        // ── Screen overlays (ABY-15) — again at the END ──
+        AbyssPacketHandler.registerS2C(CHANNEL,
+            ScreenOverlayPacket.class, ScreenOverlayPacket.CODEC,
+            () -> AbyssOverlayRenderer::handle);
     }
 }

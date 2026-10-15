@@ -47,6 +47,19 @@ public class AbyssPermissionHandler {
         return has(player, required);
     }
 
+    /**
+     * For packet handlers: checks the level and, if the player is missing it, tells them
+     * instead of silently ignoring the click.
+     *
+     *   if (!AbyssPermissionHandler.require(player, AbyssPermissionLevel.MODERATOR)) return;
+     */
+    public static boolean require(ServerPlayer player, AbyssPermissionLevel required) {
+        if (has(player, required)) return true;
+        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                "message.abysscore.no_permission", required.name()));
+        return false;
+    }
+
     // ── Load / Save ───────────────────────────────────────────────────────────
 
     public static void load() {

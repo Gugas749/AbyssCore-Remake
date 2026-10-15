@@ -29,6 +29,7 @@ public class ACModCommands {
         ACBindCommands.register(event.getDispatcher());
         ACBlindCommands.register(event.getDispatcher());
         ACBulkCommands.register(event.getDispatcher());
+        ACCorruptionCommands.register(event.getDispatcher());
         ACDimenCommands.register(event.getDispatcher());
         ACDimenSettingsCommands.register(event.getDispatcher());
         ACGodCommands.register(event.getDispatcher());
